@@ -9,7 +9,7 @@ matplotlib==3.7.2
 mercurial==6.5
 microannotate==0.0.24
 mozci==2.3.2
-numpy==1.22.4
+numpy==1.23.2
 orjson==3.9.2
 ortools==9.6.2534
 pandas==2.0.3
@@ -31,3 +31,8 @@ tenacity==8.2.2
 tqdm==4.65.0
 xgboost==1.7.6
 zstandard==0.21.0
+mlflow==2.5.0
+mlflow-extend=0.1.6
+google-auth==2.22.0
+google-cloud-artifact-registry=1.8.2
+google-cloud-storage==2.10.0
