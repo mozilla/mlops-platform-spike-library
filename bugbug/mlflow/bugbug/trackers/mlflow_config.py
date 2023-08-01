@@ -13,8 +13,8 @@ import requests
 ### https://github.com/ConsciousML/one-click-mlflow
 def get_token():
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = ""
-    if "mlflow-log-pusher-key.json" in os.listdir(Path(__file__).parent):
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(Path(__file__).parent / "mlflow-log-pusher-key.json")
+    if "mlflow-log-pusher-key.json" in os.listdir(Path(__file__).parent.parent.parent):
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(Path(__file__).parent.parent.parent / "mlflow-log-pusher-key.json")
     try:
         token = _get_token()
     except google.auth.exceptions.DefaultCredentialsError:
@@ -29,7 +29,7 @@ def get_token():
 
 def fetch_sa_key():
     check_output([f"gcloud iam service-accounts keys create ./mlflow-log-pusher-key.json --iam-account mlflow-log-pusher@{PROJECT_ID}.iam.gserviceaccount.com"], shell=True)
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(Path(__file__).parent / "mlflow-log-pusher-key.json")
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(Path(__file__).parent.parent.parent / "mlflow-log-pusher-key.json")
 
 
 def _get_token():

@@ -6,7 +6,7 @@ from bugbug.trackers.tracking_provider import TrackingProvider
 class MLFlowTracker(TrackingProvider):
     def start_run(self, name=None):
         mlflow.start_run(run_name=name)
-
+        mlflow.sklearn.autolog()
     def set_tag(self, key: str, value: any):
         mlflow.set_tag(key, value)
 
@@ -17,12 +17,12 @@ class MLFlowTracker(TrackingProvider):
         self.set_tag("name", model_name)
 
     def track_param(self, key: str, data: any):
-        mlflow.log_param("bar", 42)
-        pass
+        mlflow.log_param(key, data)
 
     def track_metric(self, key: str, data: any):
         mlflow.log_metric(key, data)
-        pass
 
     def track_all_metrics(self, data: Dict[str, any]):
-        pass
+        for key, val in enumerate(data):
+            if type(val) == str or type(val) == float or type(val) == int:
+                mlflow.log_metric(key, val)
