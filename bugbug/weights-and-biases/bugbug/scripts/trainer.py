@@ -62,9 +62,6 @@ class Trainer(object):
         metrics = model_obj.train(
             limit=args.limit
         )
-        print("METRIOCS")
-        print(metrics)
-
         wandb.summary["evaluation_metrics"] = metrics
 
         # Save the metrics as a file that can be uploaded as an artifact.
