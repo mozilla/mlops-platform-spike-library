@@ -54,5 +54,12 @@ class TrackingProvider:
        pass
 
     @abstractmethod
+    def log_artifact(self, filename, name=None):
+        pass
+    @abstractmethod
     def log_dataframe(self, name, df):
+        pass
+
+    @abstractmethod
+    def log_confusion_matrix(self, confusion_matrix, labels, name=None):
         pass

@@ -100,7 +100,7 @@ def classification_report_imbalanced_values(
     return result
 
 
-def print_labeled_confusion_matrix(confusion_matrix, labels, is_multilabel=False, title=None):
+def print_labeled_confusion_matrix(confusion_matrix, labels, is_multilabel=False):
     confusion_matrix_table = confusion_matrix.tolist()
 
     # Don't show the Not classified row in the table output
@@ -130,14 +130,6 @@ def print_labeled_confusion_matrix(confusion_matrix, labels, is_multilabel=False
             tabulate(table, headers=confusion_matrix_header, tablefmt="fancy_grid"),
             end="\n\n",
         )
-        table_data_dict = defaultdict()
-        if self.tracking_provider is not None:
-            for i in range(confusion_matrix_header):
-                table_data_dict[confusion_matrix_header[i]] = [row[i + 1] for row in table]
-            df = pd.DataFrame(data=table_data_dict, columns = ['label', *confusion_matrix_header])
-            self.tracking_provider.log_table(df)
-
-
 
 def sort_class_names(class_names):
     if len(class_names) == 2:
@@ -454,6 +446,8 @@ class Model:
             )
 
             matplotlib.pyplot.savefig("feature_importance.png", bbox_inches="tight")
+            if self.tracking_provider is not None:
+                self.tracking_provider.log_artifact("feature_importance.png", name="Feature Importance")
             matplotlib.pyplot.xlabel("Impact on model output")
             matplotlib.pyplot.clf()
 
@@ -509,8 +503,11 @@ class Model:
             tracking_metrics["report"] = report
 
         print_labeled_confusion_matrix(
-            confusion_matrix, self.class_names, is_multilabel=is_multilabel, title=f"{self.get_model_name()}_le"
+            confusion_matrix, self.class_names, is_multilabel=is_multilabel
         )
+        if self.tracking_provider is not None:
+            self.tracking_provider.log_confusion_matrix(confusion_matrix, self.class_names,
+                                                        name=f"{self.get_model_name()}_clf")
 
         tracking_metrics["confusion_matrix"] = confusion_matrix.tolist()
 
@@ -572,8 +569,10 @@ class Model:
                     )
                 )
             print_labeled_confusion_matrix(
-                confusion_matrix, confidence_class_names, is_multilabel=is_multilabel, title=f"{self.get_model_name()}_clf"
+                confusion_matrix, confidence_class_names, is_multilabel=is_multilabel
             )
+            if self.tracking_provider is not None:
+                self.tracking_provider.log_confusion_matrix(confusion_matrix, confidence_class_names, name=f"{self.get_model_name()}_clf_confidencethresh_{confidence_threshold}")
 
         self.evaluation()
 
@@ -597,7 +596,8 @@ class Model:
 
         with open(self.get_model_name(), "wb") as f:
             pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
-
+        if self.tracking_provider is not None:
+            self.tracking_provider.log_artifact(self.get_model_name(), name=f"{self.get_model_name()}_full_model.plk")
         if self.store_dataset:
             with open(f"{self.get_model_name()}_data_X", "wb") as f:
                 pickle.dump(X, f, protocol=pickle.HIGHEST_PROTOCOL)

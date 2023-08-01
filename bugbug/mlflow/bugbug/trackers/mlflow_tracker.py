@@ -1,5 +1,6 @@
 from typing import Dict
 
+import mlflow_extend.logging
 import numpy as np
 from mlflow.models import ModelSignature, set_signature
 
@@ -51,3 +52,8 @@ class MLFlowTracker(TrackingProvider):
         mlflow.sklearn.log_model(model, artifact_path=path, signature=sig)
     def log_dataframe(self, name, df):
         mlflow.log_table(df, name)
+    def log_confusion_matrix(self, confusion_matrix, _labels, name="confusion_matrix"):
+        mlflow_extend.logging.log_confusion_matrix(confusion_matrix, path=f"{name}.png")
+
+    def log_artifact(self, filename, name=None):
+        mlflow.log_artifact(filename, name)
