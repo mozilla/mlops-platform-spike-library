@@ -45,6 +45,10 @@ class MLFlowTracker(TrackingProvider):
                         for _j, (subkey2, subval2) in enumerate(subval.items()):
                             if self.is_loggable_metric(subval2):
                                 mlflow.log_metric(f"{key}_{subkey}_{subkey2}", subval2)
+                    else:
+                        mlflow_extend.log_dict({f"{key}_{subkey}": subval}, f"{key}_{subkey}")
+            else:
+                mlflow_extend.log_dict({key: val}, key)
     def _infer_signature(self, input: any, output: any):
         return mlflow.models.infer_signature(input, output)
     def log_scikit_model(self, model, path, input, output):
