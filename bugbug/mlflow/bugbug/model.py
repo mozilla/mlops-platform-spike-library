@@ -29,6 +29,7 @@ from bugbug import bugzilla, db, repository
 from bugbug.github import Github
 from bugbug.nlp import SpacyVectorizer
 from bugbug.trackers.mlflow_tracker import MLFlowTracker
+from bugbug.trackers.tracking_provider import ModelType
 from bugbug.utils import split_tuple_generator, to_array
 
 logging.basicConfig(level=logging.INFO)
@@ -161,7 +162,7 @@ class Model:
         self.eval_dbs: dict[str, tuple[str, ...]] = {}
 
         self.le = LabelEncoder()
-        self.tracking_provider = MLFlowTracker()
+        self.tracking_provider = MLFlowTracker(model_type=ModelType.SKLearn)
 
     def download_eval_dbs(
         self, extract: bool = True, ensure_exist: bool = True
@@ -341,13 +342,16 @@ class Model:
         """Subclasses implement their own function to gather labels."""
         pass
 
+    def get_model_name(self):
+        return self.__class__.__name__.lower()
     def train(self, importance_cutoff=0.15, limit=None):
-
-        if self.tracking_provider is not None:
-            self.tracking_provider.start_run(type(self).__name__)
-
         classes, self.class_names = self.get_labels()
         self.class_names = sort_class_names(self.class_names)
+        is_binary = len(self.class_names) == 2
+
+        if self.tracking_provider is not None:
+            self.tracking_provider.start_run(type(self).__name__,
+                                             positive_label=type(self).__name__ if is_binary else None)
 
         # Get items and labels, filtering out those for which we have no labels.
         X_gen, y = split_tuple_generator(lambda: self.items_gen(classes))
@@ -363,10 +367,12 @@ class Model:
             X = X[:limit]
             y = y[:limit]
 
+        if self.tracking_provider is not None:
+            self.tracking_provider.log_scikit_model(self.le, f"{self.get_model_name()}_le", X, y)
+
         logger.info(f"X: {X.shape}, y: {y.shape}")
 
         is_multilabel = isinstance(y[0], np.ndarray)
-        is_binary = len(self.class_names) == 2
 
         # Split dataset in training and test.
         X_train, X_test, y_train, y_test = self.train_test_split(X, y)
@@ -408,9 +414,13 @@ class Model:
 
         logger.info(f"X_test: {X_test.shape}, y_test: {y_test.shape}")
 
-        self.clf.fit(X_train, self.le.transform(y_train))
+        y_train_transformed = self.le.transform(y_train)
+        self.clf.fit(X_train, y_train_transformed)
 
         logger.info("Model trained")
+
+        if self.tracking_provider is not None:
+            self.tracking_provider.log_scikit_model(self.clf, f"{self.get_model_name()}_clf", X, y_train_transformed)
 
         feature_names = self.get_human_readable_feature_names()
         if self.calculate_importance and len(feature_names):
@@ -570,16 +580,21 @@ class Model:
 
             logger.info(f"X_train: {X_train.shape}, y_train: {y_train.shape}")
 
-            self.clf.fit(X_train, self.le.transform(y_train))
+            y_train_transformed = self.le.transform(y_train)
+            self.clf.fit(X_train, y_train_transformed)
 
-        with open(self.__class__.__name__.lower(), "wb") as f:
+            if self.tracking_provider is not None:
+                self.tracking_provider.log_scikit_model(self.clf, f"{self.get_model_name()}_clf_retrained", X_train,
+                                                        y_train_transformed)
+
+        with open(self.get_model_name(), "wb") as f:
             pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
 
         if self.store_dataset:
-            with open(f"{self.__class__.__name__.lower()}_data_X", "wb") as f:
+            with open(f"{self.get_model_name()}_data_X", "wb") as f:
                 pickle.dump(X, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-            with open(f"{self.__class__.__name__.lower()}_data_y", "wb") as f:
+            with open(f"{self.get_model_name()}_data_y", "wb") as f:
                 pickle.dump(y, f, protocol=pickle.HIGHEST_PROTOCOL)
         if self.tracking_provider is not None:
             self.tracking_provider.track_all_metrics(tracking_metrics)

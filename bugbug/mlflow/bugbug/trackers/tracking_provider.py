@@ -1,8 +1,17 @@
 from abc import abstractmethod
+from enum import Enum, auto
 from typing import Dict
 
+class ModelType(Enum):
+     SKLearn = auto()
 
 class TrackingProvider:
+
+    def __init__(self, model_type : ModelType = None):
+        self.model_type = model_type
+
+    def log_scikit_model(self, model, name, input, output):
+        pass
 
     def start_run(self, name=None):
         pass
@@ -39,3 +48,7 @@ class TrackingProvider:
         Each key is tracked separately
         """
         pass
+
+    @abstractmethod
+    def log_scikit_model(self, model, path, input, output):
+       pass
