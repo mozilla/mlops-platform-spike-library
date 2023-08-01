@@ -1,3 +1,6 @@
 [submodule "bugbug/bugbug"]
 	path = bugbug/bugbug
 	url = https://github.com/mozilla/bugbug.git
+[submodule "terraform-google-wandb"]
+	path = terraform-google-wandb
+	url = https://github.com/wandb/terraform-google-wandb.git
