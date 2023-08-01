@@ -1,0 +1,25 @@
+#  Local .terraform directories
+/.terraform/
+**/.terraform/*
+.tfsec/
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# .tfvars files
+*.tfvars
+
+# Terraform lock file
+.terraform.lock.hcl
+
+.DS_Store
+*.bk
+
+# Editor files
+.vscode
+kubeconfig*
+cat.*
+test.py
+.idea
+
+**/wandb/*

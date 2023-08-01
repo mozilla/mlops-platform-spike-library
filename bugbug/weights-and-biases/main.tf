@@ -20,7 +20,7 @@ resource "google_compute_network" "vpc_network" {
 }
 
 module "wandb" {
-  source    = "./terraform-google-wandb"
+  source    = "terraform-google-wandb"
   namespace = "mlops-wandb"
   license = "TEST.md"
 }
