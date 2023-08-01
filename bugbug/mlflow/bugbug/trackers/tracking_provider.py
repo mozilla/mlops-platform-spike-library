@@ -52,3 +52,7 @@ class TrackingProvider:
     @abstractmethod
     def log_scikit_model(self, model, path, input, output):
        pass
+
+    @abstractmethod
+    def log_dataframe(self, name, df):
+        pass

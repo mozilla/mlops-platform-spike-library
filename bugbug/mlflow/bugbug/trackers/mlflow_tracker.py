@@ -5,7 +5,8 @@ from mlflow.models import ModelSignature, set_signature
 
 import bugbug.trackers.mlflow_config
 #import mlflow
-from mlflow_extend import mlflow
+import mlflow
+from mlflow_extend import mlflow as ml_extend
 
 from bugbug.trackers.tracking_provider import TrackingProvider, ModelType
 
@@ -43,11 +44,10 @@ class MLFlowTracker(TrackingProvider):
                         for _j, (subkey2, subval2) in enumerate(subval.items()):
                             if self.is_loggable_metric(subval2):
                                 mlflow.log_metric(f"{key}_{subkey}_{subkey2}", subval2)
-
     def _infer_signature(self, input: any, output: any):
         return mlflow.models.infer_signature(input, output)
-
     def log_scikit_model(self, model, path, input, output):
         sig = self._infer_signature(input, output)
         mlflow.sklearn.log_model(model, artifact_path=path, signature=sig)
-
+    def log_dataframe(self, name, df):
+        mlflow.log_table(df, name)
