@@ -30,6 +30,9 @@ from bugbug.github import Github
 from bugbug.nlp import SpacyVectorizer
 from bugbug.utils import split_tuple_generator, to_array
 
+import wandb
+from wandb.xgboost import WandbCallback
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -153,6 +156,8 @@ class Model:
         self.store_dataset = False
 
         self.entire_dataset_training = False
+
+        self.reporting_params = {}
 
         # DBs required for training.
         self.training_dbs: list[str] = []
@@ -402,7 +407,11 @@ class Model:
 
         logger.info(f"X_test: {X_test.shape}, y_test: {y_test.shape}")
 
-        self.clf.fit(X_train, self.le.transform(y_train))
+        self.clf.fit(
+            X_train,
+            self.le.transform(y_train),
+            callbacks=[WandbCallback()]
+        )
 
         logger.info("Model trained")
 

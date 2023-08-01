@@ -6,6 +6,8 @@ import json
 import os
 import sys
 from logging import INFO, basicConfig, getLogger
+import wandb
+
 
 from bugbug import db
 from bugbug.models import MODELS, get_model_class
@@ -48,7 +50,22 @@ class Trainer(object):
             logger.info("Skipping download of the databases")
 
         logger.info("Training *%s* model", model_name)
-        metrics = model_obj.train(limit=args.limit)
+
+        wandb.init(
+            # set the wandb project where this run will be logged
+            project="bugbug-prototype",
+
+            # track hyperparameters and run metadata
+            config=model_obj.reporting_params
+        )
+
+        metrics = model_obj.train(
+            limit=args.limit
+        )
+        print("METRIOCS")
+        print(metrics)
+
+        wandb.summary["evaluation_metrics"] = metrics
 
         # Save the metrics as a file that can be uploaded as an artifact.
         metric_file_path = "metrics.json"
