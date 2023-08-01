@@ -17,6 +17,8 @@ http_service/models/*model*
 
 data/
 sheets/
+mlflow/
+mlruns/
 
 .mypy_cache/
 .pytest_cache/

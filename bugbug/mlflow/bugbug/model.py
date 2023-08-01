@@ -28,6 +28,7 @@ from tabulate import tabulate
 from bugbug import bugzilla, db, repository
 from bugbug.github import Github
 from bugbug.nlp import SpacyVectorizer
+from bugbug.trackers.mlflow_tracker import MLFlowTracker
 from bugbug.utils import split_tuple_generator, to_array
 
 logging.basicConfig(level=logging.INFO)
@@ -160,6 +161,7 @@ class Model:
         self.eval_dbs: dict[str, tuple[str, ...]] = {}
 
         self.le = LabelEncoder()
+        self.tracking_provider = MLFlowTracker()
 
     def download_eval_dbs(
         self, extract: bool = True, ensure_exist: bool = True
@@ -340,6 +342,10 @@ class Model:
         pass
 
     def train(self, importance_cutoff=0.15, limit=None):
+
+        if self.tracking_provider is not None:
+            self.tracking_provider.start_run(type(self).__name__)
+
         classes, self.class_names = self.get_labels()
         self.class_names = sort_class_names(self.class_names)
 
@@ -443,7 +449,6 @@ class Model:
             feature_report = self.save_feature_importances(
                 important_features, feature_names
             )
-
             tracking_metrics["feature_report"] = feature_report
 
         logger.info("Training Set scores:")
@@ -576,7 +581,9 @@ class Model:
 
             with open(f"{self.__class__.__name__.lower()}_data_y", "wb") as f:
                 pickle.dump(y, f, protocol=pickle.HIGHEST_PROTOCOL)
-
+        if self.tracking_provider is not None:
+            self.tracking_provider.track_all_metrics(tracking_metrics)
+            self.tracking_provider.end_run()
         return tracking_metrics
 
     @staticmethod
