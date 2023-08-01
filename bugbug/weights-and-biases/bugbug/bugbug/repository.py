@@ -24,7 +24,6 @@ from typing import Collection, Iterable, Iterator, NewType, Optional, Set, Union
 
 import hglib
 import lmdb
-import rs_parsepatch
 import tenacity
 from tqdm import tqdm
 
@@ -730,7 +729,7 @@ def transform(hg: hglib.client, repo_dir: str, commit: Commit) -> Commit:
 
     patch = hg.export(revs=[commit.node.encode("ascii")], git=True)
     try:
-        patch_data = rs_parsepatch.get_lines(patch)
+        patch_data = []
     except Exception:
         logger.error(f"Exception while analyzing {commit.node}")
         raise
