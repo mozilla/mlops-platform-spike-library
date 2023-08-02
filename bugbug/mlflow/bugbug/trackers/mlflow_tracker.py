@@ -34,21 +34,18 @@ class MLFlowTracker(TrackingProvider):
     def is_loggable_metric(self, val):
         return type(val) == str or np.isscalar(val)
     def track_all_metrics(self, data: Dict[str, any]):
-        for _i, (key, val) in enumerate(data.items()):
-            if self.is_loggable_metric(val):
-                mlflow.log_metric(key, val)
-            elif type(val) is dict:
-                for _j, (subkey, subval) in enumerate(val.items()):
-                    if self.is_loggable_metric(subval):
-                        mlflow.log_metric(f"{key}_{subkey}", subval)
-                    elif type(subval) is dict:
-                        for _j, (subkey2, subval2) in enumerate(subval.items()):
-                            if self.is_loggable_metric(subval2):
-                                mlflow.log_metric(f"{key}_{subkey}_{subkey2}", subval2)
-                    else:
-                        mlflow_extend.log_dict({f"{key}_{subkey}": subval}, f"{key}_{subkey}")
-            else:
-                mlflow_extend.log_dict({key: val}, key)
+        def log_dict_recursive(recurse_dict: Dict[str, any], prefix=None):
+            prefix_with_separator = f"{prefix}_" if prefix is not None else ""
+            for _i, (key, val) in enumerate(recurse_dict.items()):
+                next_prefix = f"{prefix_with_separator}{key}"
+                if self.is_loggable_metric(val):
+                    mlflow.log_metric(f"{next_prefix}", val)
+                elif type(val) is dict:
+                    log_dict_recursive(val, prefix=f"{next_prefix}")
+                else:
+                    # We can't log array or some such element - make it an artifact
+                    mlflow_extend.logging.log_dict({next_prefix: val}, f"{next_prefix}.json")
+        log_dict_recursive(data)
     def _infer_signature(self, input: any, output: any):
         return mlflow.models.infer_signature(input, output)
     def log_scikit_model(self, model, path, input, output):
