@@ -24,7 +24,6 @@ from typing import Collection, Iterable, Iterator, NewType, Optional, Set, Union
 
 import hglib
 import lmdb
-import rs_parsepatch
 import tenacity
 from tqdm import tqdm
 
