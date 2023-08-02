@@ -152,7 +152,7 @@ class Model:
 
         self.calculate_importance = True
 
-        self.store_dataset = True
+        self.store_dataset = False
 
         self.entire_dataset_training = False
 
@@ -162,7 +162,6 @@ class Model:
         self.eval_dbs: dict[str, tuple[str, ...]] = {}
 
         self.le = LabelEncoder()
-        self.tracking_provider = MLFlowTracker(model_type=ModelType.SKLearn)
 
     def download_eval_dbs(
         self, extract: bool = True, ensure_exist: bool = True
@@ -349,10 +348,6 @@ class Model:
         self.class_names = sort_class_names(self.class_names)
         is_binary = len(self.class_names) == 2
 
-        if self.tracking_provider is not None:
-            self.tracking_provider.start_run(type(self).__name__,
-                                             positive_label=type(self).__name__ if is_binary else None)
-
         # Get items and labels, filtering out those for which we have no labels.
         X_gen, y = split_tuple_generator(lambda: self.items_gen(classes))
 
@@ -421,6 +416,8 @@ class Model:
 
         if self.tracking_provider is not None:
             self.tracking_provider.log_scikit_model(self.clf, f"{self.get_model_name()}_clf", X, y_train_transformed)
+            self.tracking_provider.log_data_input(X_train, "X_train")
+            self.tracking_provider.log_data_input(y_train, "y_train")
 
         feature_names = self.get_human_readable_feature_names()
         if self.calculate_importance and len(feature_names):
@@ -603,9 +600,6 @@ class Model:
                 pickle.dump(X, f, protocol=pickle.HIGHEST_PROTOCOL)
             with open(f"{self.get_model_name()}_data_y", "wb") as f:
                 pickle.dump(y, f, protocol=pickle.HIGHEST_PROTOCOL)
-            if self.tracking_provider is not None:
-                self.tracking_provider.log_data_input(X, "X")
-                self.tracking_provider.log_data_input(y, "y")
 
         if self.tracking_provider is not None:
             self.tracking_provider.track_all_metrics(tracking_metrics)

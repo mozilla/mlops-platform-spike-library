@@ -33,7 +33,7 @@ class MLFlowTracker(TrackingProvider):
     def log_data_input(self, data:any, name: str):
         if isinstance(data, numpy.ndarray):
             dataset = mlflow.data.from_numpy(data, source=name)
-            mlflow.log_input(dataset, context="training")
+            mlflow.log_input(dataset, context=name)
     def track_metric(self, key: str, data: any):
         mlflow.log_metric(key, data)
     def is_loggable_metric(self, val):
