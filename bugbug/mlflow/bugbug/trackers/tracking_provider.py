@@ -56,6 +56,10 @@ class TrackingProvider:
     @abstractmethod
     def log_artifact(self, filename, name=None):
         pass
+
+    @abstractmethod
+    def log_data_input(self, data:any, name: str):
+        pass
     @abstractmethod
     def log_dataframe(self, name, df):
         pass

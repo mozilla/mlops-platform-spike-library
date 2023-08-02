@@ -52,8 +52,8 @@ def _get_client_id(service_uri):
     parsed = six.moves.urllib.parse.urlparse(redirect_location)
     query_string = six.moves.urllib.parse.parse_qs(parsed.query)
     return query_string["client_id"][0]
-PROJECT_ID = "mox-fx-dev-rrando-pocket-ml" # input("Enter your project ID: ")
-EXPERIMENT_NAME = "test"
+PROJECT_ID = "moz-fx-dev-ctroy-ml-ops-spikes" # input("Enter your project ID: ")
+EXPERIMENT_NAME = "BugBug"
 # If mlflow if not deployed on the default app engine service, change it with the url of your service <!-- omit in toc -->
 tracking_uri = f"https://mlflow-dot-{PROJECT_ID}.ew.r.appspot.com"
 print(f"Trying to set uri to {tracking_uri}")

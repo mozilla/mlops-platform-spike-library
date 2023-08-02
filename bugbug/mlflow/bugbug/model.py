@@ -152,7 +152,7 @@ class Model:
 
         self.calculate_importance = True
 
-        self.store_dataset = False
+        self.store_dataset = True
 
         self.entire_dataset_training = False
 
@@ -601,9 +601,12 @@ class Model:
         if self.store_dataset:
             with open(f"{self.get_model_name()}_data_X", "wb") as f:
                 pickle.dump(X, f, protocol=pickle.HIGHEST_PROTOCOL)
-
             with open(f"{self.get_model_name()}_data_y", "wb") as f:
                 pickle.dump(y, f, protocol=pickle.HIGHEST_PROTOCOL)
+            if self.tracking_provider is not None:
+                self.tracking_provider.log_data_input(X, "X")
+                self.tracking_provider.log_data_input(y, "y")
+
         if self.tracking_provider is not None:
             self.tracking_provider.track_all_metrics(tracking_metrics)
             self.tracking_provider.end_run()
