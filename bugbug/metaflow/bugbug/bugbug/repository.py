@@ -729,8 +729,8 @@ def transform(hg: hglib.client, repo_dir: str, commit: Commit) -> Commit:
     metrics_file_count = 0
 
     patch = hg.export(revs=[commit.node.encode("ascii")], git=True)
-    try:
-        patch_data = rs_parsepatch.get_lines(patch)
+    try:        
+        patch_data = []
     except Exception:
         logger.error(f"Exception while analyzing {commit.node}")
         raise
