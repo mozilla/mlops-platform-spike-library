@@ -20,6 +20,7 @@ from imblearn.metrics import (
     specificity_score,
 )
 from imblearn.pipeline import make_pipeline
+from mlflow.models import infer_signature
 from sklearn import metrics
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import precision_recall_fscore_support
@@ -602,20 +603,33 @@ class Model(mlflow.pyfunc.PythonModel):
 
         with open(self.get_model_name(), "wb") as f:
             pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
+
         if self.tracking_provider is not None:
-            inference_model = SpambugInference(self.extraction_pipeline, self.clf, self.le)
+            model_for_inference = SpambugInference(self.extraction_pipeline, self.clf, self.le)
             with open("./tests/fixtures/bugs.json") as f:
                 example_bugs = [json.loads(line) for line in f]
             for bug in example_bugs:
                 bug["filed_via"] = "bugzilla"
-            mlflow.pyfunc.save_model("model_demo", python_model=inference_model,
-                                     code_path=["./bugbug/trackers/spambug_inference.py"],
-                                     input_example=example_bugs[:3])
-            model = mlflow.pyfunc.load_model("model_demo")
-            print(model.predict(example_bugs[:3]))
-
-#            self.tracking_provider.log_pyfunc_model(self.get_model_name(), name=f"{self.get_model_name()}_full_model",
-#                                                    input=X_train, output=y_train)
+            prediction_input = [json.dumps(e) for e in example_bugs[:3]]
+            prediction_output = model_for_inference.predict(None, prediction_input)
+            #mlflow.pyfunc.save_model("spambug_full_model", python_model=model_for_inference,
+            #                         code_path=["./bugbug/trackers/spambug_inference.py"],
+            #                         input_example=prediction_input)
+            signature = infer_signature(prediction_input, prediction_output)
+            mlflow.pyfunc.log_model(
+                artifact_path="spambug_full_model",
+                python_model=model_for_inference,
+                code_path=["./bugbug/trackers/spambug_inference.py",
+                           "./bugbug/bug_features.py",
+                           "./bugbug/bug_snapshot.py",
+                           "./bugbug/repository.py",
+                           "./bugbug/db.py",
+                           "./bugbug/rust_code_analysis_server.py",
+                           "./bugbug/utils.py",
+                           "./bugbug/__init__.py"
+                           ],
+                signature=signature
+            )
         if self.store_dataset:
             with open(f"{self.get_model_name()}_data_X", "wb") as f:
                 pickle.dump(X, f, protocol=pickle.HIGHEST_PROTOCOL)

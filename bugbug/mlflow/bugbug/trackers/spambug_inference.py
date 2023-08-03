@@ -1,3 +1,6 @@
+import json
+from typing import List
+
 import mlflow
 import pandas
 from pandas import DataFrame
@@ -11,14 +14,13 @@ class SpambugInference(mlflow.pyfunc.PythonModel):
         self.extraction_pipeline = extraction_pipeline
         self.clf = clf
         self.le = le
-    def predict(self, context, bugs):
+    def predict(self, context, bugs: List[str]):
         """
         Args:
             context ([type]): MLflow context where the model artifact is stored.
             model_input ([type]): the input data to fit into the model.
         """
-        if isinstance(bugs, DataFrame):
-            bugs = bugs.to_dict("records")
+        bugs = [json.loads(s) for s in bugs]
         probs = self.classify(bugs, True)
         indexes = probs.argmax(axis=-1)
         suggestions = self.le.inverse_transform(indexes)
