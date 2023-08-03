@@ -2,13 +2,14 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
-
+import json
 import logging
 import pickle
 from collections import defaultdict
 from typing import Any
 
 import matplotlib
+import mlflow
 import numpy as np
 import pandas as pd
 import shap
@@ -30,6 +31,7 @@ from bugbug import bugzilla, db, repository
 from bugbug.github import Github
 from bugbug.nlp import SpacyVectorizer
 from bugbug.trackers.mlflow_tracker import MLFlowTracker
+from bugbug.trackers.spambug_inference import SpambugInference
 from bugbug.trackers.tracking_provider import ModelType
 from bugbug.utils import split_tuple_generator, to_array
 
@@ -140,7 +142,7 @@ def sort_class_names(class_names):
     return class_names
 
 
-class Model:
+class Model(mlflow.pyfunc.PythonModel):
     def __init__(self, lemmatization=False):
         if lemmatization:
             self.text_vectorizer = SpacyVectorizer
@@ -163,6 +165,13 @@ class Model:
 
         self.le = LabelEncoder()
 
+    def load_context(self, context):
+        """This method is called when loading an MLflow model with pyfunc.load_model(), as soon as the Python Model is constructed.
+        Args:
+            context: MLflow context where the model artifact is stored.
+        """
+        with open(context.artifacts["spambugmodel_full_model.plk"], "rb") as f:
+            return pickle.load(f)
     def download_eval_dbs(
         self, extract: bool = True, ensure_exist: bool = True
     ) -> None:
@@ -594,7 +603,19 @@ class Model:
         with open(self.get_model_name(), "wb") as f:
             pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
         if self.tracking_provider is not None:
-            self.tracking_provider.log_artifact(self.get_model_name(), name=f"{self.get_model_name()}_full_model.plk")
+            inference_model = SpambugInference(self.extraction_pipeline, self.clf, self.le)
+            with open("./tests/fixtures/bugs.json") as f:
+                example_bugs = [json.loads(line) for line in f]
+            for bug in example_bugs:
+                bug["filed_via"] = "bugzilla"
+            mlflow.pyfunc.save_model("model_demo", python_model=inference_model,
+                                     code_path=["./bugbug/trackers/spambug_inference.py"],
+                                     input_example=example_bugs[:3])
+            model = mlflow.pyfunc.load_model("model_demo")
+            print(model.predict(example_bugs[:3]))
+
+#            self.tracking_provider.log_pyfunc_model(self.get_model_name(), name=f"{self.get_model_name()}_full_model",
+#                                                    input=X_train, output=y_train)
         if self.store_dataset:
             with open(f"{self.get_model_name()}_data_X", "wb") as f:
                 pickle.dump(X, f, protocol=pickle.HIGHEST_PROTOCOL)

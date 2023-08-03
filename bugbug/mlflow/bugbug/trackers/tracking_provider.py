@@ -54,6 +54,9 @@ class TrackingProvider:
        pass
 
     @abstractmethod
+    def log_pyfunc_model(self, model, path, input, output):
+        pass
+    @abstractmethod
     def log_artifact(self, filename, name=None):
         pass
 

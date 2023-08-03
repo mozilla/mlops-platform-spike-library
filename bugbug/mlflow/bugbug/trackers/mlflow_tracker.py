@@ -19,6 +19,8 @@ class MLFlowTracker(TrackingProvider):
         mlflow.start_run(run_name=name)
     def log_scikit_model(self, model, name, input, output):
         mlflow.sklearn.log_model(model, name, input, output)
+    def log_pyfunc_model(self, model, name, input, output):
+        mlflow.pyfunc.log_model(model, name, input, output)
     def set_tag(self, key: str, value: any):
         mlflow.set_tag(key, value)
     def end_run(self):
