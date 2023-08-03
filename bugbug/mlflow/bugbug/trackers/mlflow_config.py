@@ -62,3 +62,4 @@ os.environ["MLFLOW_TRACKING_TOKEN"] = get_token()
 set_tracking_uri(tracking_uri)
 print(f"Tracking uri set to {tracking_uri}")
 set_experiment(EXPERIMENT_NAME)
+
