@@ -4,6 +4,7 @@ boto3==1.28.12
 google-auth==2.22.0
 google-cloud-storage==2.10.0
 imbalanced-learn==0.11.0
+kubernetes==27.2.0
 libmozdata==0.2.4
 lmdb==1.4.1
 markdown2==2.4.10
