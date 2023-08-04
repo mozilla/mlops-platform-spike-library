@@ -33,6 +33,8 @@ from bugbug.utils import split_tuple_generator, to_array
 import wandb
 from wandb.xgboost import WandbCallback
 
+import pandas as pd
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -348,6 +350,16 @@ class Model:
         pass
 
     def train(self, importance_cutoff=0.15, limit=None):
+        run = wandb.init(
+            # set the wandb project where this run will be logged
+            project="bugbug-prototype",
+
+            # track hyperparameters and run metadata
+            config={
+                "importance_cutoff": importance_cutoff
+            }
+        )
+
         classes, self.class_names = self.get_labels()
         self.class_names = sort_class_names(self.class_names)
 
@@ -413,8 +425,24 @@ class Model:
         self.clf.fit(
             X_train,
             self.le.transform(y_train),
-            callbacks=[WandbCallback()]
+            callbacks=[WandbCallback(log_model=True)]
         )
+
+        # artifact = wandb.Artifact(name="X_train", type="data")
+        # artifact.add_file(X_train.to_csv())
+        # run.log_artifact(artifact)
+        #
+        # artifact = wandb.Artifact(name="X_test", type="data")
+        # artifact.add_file(X_test.to_csv())
+        # run.log_artifact(artifact)
+        #
+        # artifact = wandb.Artifact(name="y_train", type="data")
+        # artifact.add_file(y_train.to_csv())
+        # run.log_artifact(artifact)
+        #
+        # artifact = wandb.Artifact(name="y_test", type="data")
+        # artifact.add_file(y_test.to_csv())
+        # run.log_artifact(artifact)
 
         logger.info("Model trained")
 
@@ -589,7 +617,8 @@ class Model:
             with open(f"{self.__class__.__name__.lower()}_data_y", "wb") as f:
                 pickle.dump(y, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-        return tracking_metrics
+        wandb.log(tracking_metrics)
+        return tracking_metrics, run
 
     @staticmethod
     def load(model_file_name: str) -> "Model":

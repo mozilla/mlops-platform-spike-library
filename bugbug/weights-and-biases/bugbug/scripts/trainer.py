@@ -51,18 +51,9 @@ class Trainer(object):
 
         logger.info("Training *%s* model", model_name)
 
-        run = wandb.init(
-            # set the wandb project where this run will be logged
-            project="bugbug-prototype",
-
-            # track hyperparameters and run metadata
-            config=model_obj.reporting_params
-        )
-
-        metrics = model_obj.train(
+        metrics, wandb_run = model_obj.train(
             limit=args.limit
         )
-        wandb.log(metrics)
 
         # Save the metrics as a file that can be uploaded as an artifact.
         metric_file_path = "metrics.json"
@@ -71,7 +62,7 @@ class Trainer(object):
 
         artifact = wandb.Artifact(name="metrics_file", type="data")
         artifact.add_file("metrics.json")
-        run.log_artifact(artifact)
+        wandb_run.log_artifact(artifact)
 
         logger.info("Training done")
 
@@ -83,21 +74,13 @@ class Trainer(object):
 
         artifact = wandb.Artifact(name="model_file", type="data")
         artifact.add_file(f"{model_name}model")
-        run.log_artifact(artifact)
+        wandb_run.log_artifact(artifact)
 
         if model_obj.store_dataset:
             assert os.path.exists(f"{model_file_name}_data_X")
             zstd_compress(f"{model_file_name}_data_X")
             assert os.path.exists(f"{model_file_name}_data_y")
             zstd_compress(f"{model_file_name}_data_y")
-
-            artifact = wandb.Artifact(name="data_X", type="data")
-            artifact.add_file(f"{model_file_name}_data_X")
-            run.log_artifact(artifact)
-
-            artifact = wandb.Artifact(name="data_y", type="data")
-            artifact.add_file(f"{model_file_name}_data_y")
-            run.log_artifact(artifact)
 
 def parse_args(args):
     description = "Train the models"
