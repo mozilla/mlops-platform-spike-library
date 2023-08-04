@@ -26,7 +26,7 @@ import numpy as np
 import psutil
 import requests
 import scipy
-import taskcluster
+#import taskcluster
 import zstandard
 from pkg_resources import DistributionNotFound
 from requests.packages.urllib3.util.retry import Retry
@@ -114,7 +114,7 @@ def get_taskcluster_options() -> dict:
 
     The current environment could be local.
     """
-    options = taskcluster.optionsFromEnvironment()
+    options = {}  # taskcluster.optionsFromEnvironment()
     proxy_url = os.environ.get("TASKCLUSTER_PROXY_URL")
 
     if proxy_url is not None:
@@ -142,19 +142,21 @@ def get_secret(secret_id: str) -> Any:
     tc_secret_id = os.environ.get("TC_SECRET_ID")
 
     if tc_secret_id:
-        secrets = taskcluster.Secrets(get_taskcluster_options())
-        secret_bucket = secrets.get(tc_secret_id)
+        # secrets = taskcluster.Secrets(get_taskcluster_options())
+        # secret_bucket = secrets.get(tc_secret_id)
 
-        return secret_bucket["secret"][secret_id]
+        # return secret_bucket["secret"][secret_id]
+        return ''
 
     else:
         raise ValueError("Failed to find secret {}".format(secret_id))
 
 
 def get_s3_credentials() -> dict:
-    auth = taskcluster.Auth(get_taskcluster_options())
-    response = auth.awsS3Credentials("read-write", "communitytc-bugbug", "data/")
-    return response["credentials"]
+    # auth = taskcluster.Auth(get_taskcluster_options())
+    # response = auth.awsS3Credentials("read-write", "communitytc-bugbug", "data/")
+    # return response["credentials"]
+    return {}
 
 
 def upload_s3(paths: str) -> None:
