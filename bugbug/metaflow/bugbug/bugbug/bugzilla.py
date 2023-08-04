@@ -12,7 +12,7 @@ from typing import Iterable, Iterator, NewType, Optional
 
 import tenacity
 from dateutil.relativedelta import relativedelta
-from libmozdata.bugzilla import Bugzilla
+# from libmozdata.bugzilla import Bugzilla
 from tqdm import tqdm
 
 from bugbug import db, utils
@@ -90,26 +90,27 @@ def get_bugs(include_invalid: Optional[bool] = False) -> Iterator[BugDict]:
 
 
 def set_token(token):
-    Bugzilla.TOKEN = token
+    # Bugzilla.TOKEN = token
+    pass
 
 
 def get_ids(params):
     assert "include_fields" not in params or params["include_fields"] == "id"
 
-    old_CHUNK_SIZE = Bugzilla.BUGZILLA_CHUNK_SIZE
-    try:
-        Bugzilla.BUGZILLA_CHUNK_SIZE = 7000
+    # old_CHUNK_SIZE = Bugzilla.BUGZILLA_CHUNK_SIZE
+    # try:
+        # Bugzilla.BUGZILLA_CHUNK_SIZE = 7000
 
-        all_ids = []
+    all_ids = []
 
-        def bughandler(bug):
-            all_ids.append(bug["id"])
+    def bughandler(bug):
+        all_ids.append(bug["id"])
 
-        params["include_fields"] = "id"
+    params["include_fields"] = "id"
 
-        Bugzilla(params, bughandler=bughandler).get_data().wait()
-    finally:
-        Bugzilla.BUGZILLA_CHUNK_SIZE = old_CHUNK_SIZE
+        # Bugzilla(params, bughandler=bughandler).get_data().wait()
+    # finally:
+        # Bugzilla.BUGZILLA_CHUNK_SIZE = old_CHUNK_SIZE
 
     return all_ids
 
@@ -149,16 +150,16 @@ def get(ids_or_query):
 
         new_bugs[bug_id]["history"] = bug["history"]
 
-    Bugzilla(
-        ids_or_query,
-        include_fields=INCLUDE_FIELDS,
-        bughandler=bughandler,
-        commenthandler=commenthandler,
-        comment_include_fields=COMMENT_INCLUDE_FIELDS,
-        attachmenthandler=attachmenthandler,
-        attachment_include_fields=ATTACHMENT_INCLUDE_FIELDS,
-        historyhandler=historyhandler,
-    ).get_data().wait()
+    # Bugzilla(
+    #     ids_or_query,
+    #     include_fields=INCLUDE_FIELDS,
+    #     bughandler=bughandler,
+    #     commenthandler=commenthandler,
+    #     comment_include_fields=COMMENT_INCLUDE_FIELDS,
+    #     attachmenthandler=attachmenthandler,
+    #     attachment_include_fields=ATTACHMENT_INCLUDE_FIELDS,
+    #     historyhandler=historyhandler,
+    # ).get_data().wait()
 
     return new_bugs
 
@@ -198,8 +199,8 @@ def download_bugs(bug_ids: Iterable[int], security: bool = False) -> list[BugDic
     new_bug_ids = sorted(list(new_bug_ids_set))
 
     chunks = (
-        new_bug_ids[i : (i + Bugzilla.BUGZILLA_CHUNK_SIZE)]
-        for i in range(0, len(new_bug_ids), Bugzilla.BUGZILLA_CHUNK_SIZE)
+        # new_bug_ids[i : (i + Bugzilla.BUGZILLA_CHUNK_SIZE)]
+        # for i in range(0, len(new_bug_ids), Bugzilla.BUGZILLA_CHUNK_SIZE)
     )
 
     @tenacity.retry(
@@ -357,7 +358,7 @@ def get_active_product_components(products=[]) -> set[tuple[str, str]]:
             ],
             "names": products,
         },
-        headers={"X-Bugzilla-API-Key": Bugzilla.TOKEN, "User-Agent": "bugbug"},
+        # headers={"X-Bugzilla-API-Key": Bugzilla.TOKEN, "User-Agent": "bugbug"},
     )
     r.raise_for_status()
 
@@ -377,7 +378,7 @@ def get_component_team_mapping() -> dict[str, dict[str, str]]:
             "type": "accessible",
             "include_fields": ["name", "components.name", "components.team_name"],
         },
-        headers={"X-Bugzilla-API-Key": Bugzilla.TOKEN, "User-Agent": "bugbug"},
+        # headers={"X-Bugzilla-API-Key": Bugzilla.TOKEN, "User-Agent": "bugbug"},
     )
     r.raise_for_status()
 
@@ -396,7 +397,7 @@ def get_groups_users(group_names: list[str]) -> list[str]:
             "names": group_names,
             "membership": "1",
         },
-        headers={"X-Bugzilla-API-Key": Bugzilla.TOKEN, "User-Agent": "bugbug"},
+        # headers={"X-Bugzilla-API-Key": Bugzilla.TOKEN, "User-Agent": "bugbug"},
     )
     r.raise_for_status()
 
@@ -486,7 +487,7 @@ def calculate_maintenance_effectiveness_indicator(
             r = utils.get_session("bugzilla").get(
                 "https://bugzilla.mozilla.org/rest/bug",
                 params=params,
-                headers={"X-Bugzilla-API-Key": Bugzilla.TOKEN, "User-Agent": "bugbug"},
+                # headers={"X-Bugzilla-API-Key": Bugzilla.TOKEN, "User-Agent": "bugbug"},
             )
             r.raise_for_status()
 

@@ -22,9 +22,8 @@ from datetime import datetime
 from functools import lru_cache
 from typing import Collection, Iterable, Iterator, NewType, Optional, Set, Union
 
-import hglib
+# import hglib
 import lmdb
-import rs_parsepatch
 import tenacity
 from tqdm import tqdm
 
@@ -322,15 +321,16 @@ def get_revision_id(commit: CommitDict) -> Optional[int]:
 def _init_process(repo_dir: str) -> None:
     global HG, REPO_DIR
     REPO_DIR = repo_dir
-    HG = hglib.open(REPO_DIR)
+    # HG = hglib.open(REPO_DIR)
     get_component_mapping()
 
 
 def _init_thread(repo_dir: str) -> None:
-    hg_server = hglib.open(repo_dir)
-    thread_local.hg = hg_server
-    with hg_servers_lock:
-        hg_servers.append(hg_server)
+    # hg_server = hglib.open(repo_dir)
+    # thread_local.hg = hg_server
+    # with hg_servers_lock:
+    #     hg_servers.append(hg_server)
+    pass
 
 
 # This code was adapted from https://github.com/mozsearch/mozsearch/blob/2e24a308bf66b4c149683bfeb4ceeea3b250009a/router/router.py#L127
@@ -354,13 +354,13 @@ def is_test(path: str) -> bool:
 
 def hg_modified_files(hg, commit):
     template = '{join(files,"|")}\\0{join(file_copies,"|")}\\0'
-    args = hglib.util.cmdbuilder(
-        b"log",
-        template=template,
-        no_merges=True,
-        rev=commit.node.encode("ascii"),
-        branch="tip",
-    )
+    # args = hglib.util.cmdbuilder(
+    #     b"log",
+    #     template=template,
+    #     no_merges=True,
+    #     rev=commit.node.encode("ascii"),
+    #     branch="tip",
+    # )
     x = hg.rawcommand(args)
     files_str, file_copies_str = x.split(b"\x00")[:-1]
 
@@ -715,7 +715,7 @@ def set_commit_metrics(
         )
 
 
-def transform(hg: hglib.client, repo_dir: str, commit: Commit) -> Commit:
+def transform(hg, repo_dir: str, commit: Commit) -> Commit:
     hg_modified_files(hg, commit)
 
     if commit.ignored or len(commit.backsout) > 0 or commit.bug_id is None:
@@ -729,8 +729,8 @@ def transform(hg: hglib.client, repo_dir: str, commit: Commit) -> Commit:
     metrics_file_count = 0
 
     patch = hg.export(revs=[commit.node.encode("ascii")], git=True)
-    try:
-        patch_data = rs_parsepatch.get_lines(patch)
+    try:        
+        patch_data = []
     except Exception:
         logger.error(f"Exception while analyzing {commit.node}")
         raise
@@ -752,7 +752,7 @@ def transform(hg: hglib.client, repo_dir: str, commit: Commit) -> Commit:
                     rev=commit.node.encode("ascii"),
                 )
                 size = after.count(b"\n")
-            except hglib.error.CommandError as e:
+            except:  # hglib.error.CommandError as e:
                 if b"no such file in rev" not in e.err:
                     raise
 
@@ -796,7 +796,7 @@ def transform(hg: hglib.client, repo_dir: str, commit: Commit) -> Commit:
                                 before_metrics = code_analysis_server.metrics(
                                     path, before, unit=False
                                 )
-                            except hglib.error.CommandError as e:
+                            except:  # hglib.error.CommandError as e:
                                 if b"no such file in rev" not in e.err:
                                     raise
 
@@ -871,89 +871,89 @@ def _transform(commit):
 
 
 def hg_log(
-    hg: hglib.client, revs: list[bytes], branch: Optional[str] = "tip"
+    hg, revs: list[bytes], branch: Optional[str] = "tip"
 ) -> tuple[Commit, ...]:
     if len(revs) == 0:
         return tuple()
 
     template = "{node}\\0{author}\\0{desc}\\0{bug}\\0{backedoutby}\\0{author|email}\\0{pushdate|hgdate}\\0{reviewers}\\0{backsoutnodes}\\0"
 
-    args = hglib.util.cmdbuilder(
-        b"log",
-        template=template,
-        no_merges=True,
-        rev=revs,
-        branch=branch,
-    )
+    # args = hglib.util.cmdbuilder(
+    #     b"log",
+    #     template=template,
+    #     no_merges=True,
+    #     rev=revs,
+    #     branch=branch,
+    # )
     x = hg.rawcommand(args)
     out = x.split(b"\x00")[:-1]
 
     commits = []
-    for rev in hglib.util.grouper(template.count("\\0"), out):
-        assert b" " in rev[6]
-        pushdate_timestamp = rev[6].split(b" ", 1)[0]
-        if pushdate_timestamp != b"0":
-            pushdate = datetime.utcfromtimestamp(float(pushdate_timestamp))
-        else:
-            pushdate = datetime.utcnow()
-
-        bug_id = int(rev[3].decode("ascii")) if rev[3] else None
-
-        reviewers = (
-            list(
-                set(
-                    sys.intern(r)
-                    for r in rev[7].decode("utf-8").split(" ")
-                    if r
-                    not in (
-                        "",
-                        "testonly",
-                        "gaia-bump",
-                        "me",
-                        "fix",
-                        "wpt-fix",
-                        "testing",
-                        "bustage",
-                        "test-only",
-                        "blocking",
-                        "blocking-fennec",
-                        "blocking1.9",
-                        "backout",
-                        "trivial",
-                        "DONTBUILD",
-                        "blocking-final",
-                        "blocking-firefox3",
-                        "test",
-                        "bustage-fix",
-                        "release",
-                        "tests",
-                        "lint-fix",
-                    )
-                )
-            )
-            if rev[7] != b""
-            else []
-        )
-
-        backsout = (
-            list(set(sys.intern(r) for r in rev[8].decode("utf-8").split(" ")))
-            if rev[8] != b""
-            else []
-        )
-
-        commits.append(
-            Commit(
-                node=sys.intern(rev[0].decode("ascii")),
-                author=sys.intern(rev[1].decode("utf-8")),
-                desc=rev[2].decode("utf-8"),
-                pushdate=pushdate,
-                bug_id=bug_id,
-                backsout=backsout,
-                backedoutby=rev[4].decode("ascii"),
-                author_email=rev[5].decode("utf-8"),
-                reviewers=reviewers,
-            )
-        )
+    # for rev in hglib.util.grouper(template.count("\\0"), out):
+    #     assert b" " in rev[6]
+    #     pushdate_timestamp = rev[6].split(b" ", 1)[0]
+    #     if pushdate_timestamp != b"0":
+    #         pushdate = datetime.utcfromtimestamp(float(pushdate_timestamp))
+    #     else:
+    #         pushdate = datetime.utcnow()
+    # 
+    #     bug_id = int(rev[3].decode("ascii")) if rev[3] else None
+    # 
+    #     reviewers = (
+    #         list(
+    #             set(
+    #                 sys.intern(r)
+    #                 for r in rev[7].decode("utf-8").split(" ")
+    #                 if r
+    #                 not in (
+    #                     "",
+    #                     "testonly",
+    #                     "gaia-bump",
+    #                     "me",
+    #                     "fix",
+    #                     "wpt-fix",
+    #                     "testing",
+    #                     "bustage",
+    #                     "test-only",
+    #                     "blocking",
+    #                     "blocking-fennec",
+    #                     "blocking1.9",
+    #                     "backout",
+    #                     "trivial",
+    #                     "DONTBUILD",
+    #                     "blocking-final",
+    #                     "blocking-firefox3",
+    #                     "test",
+    #                     "bustage-fix",
+    #                     "release",
+    #                     "tests",
+    #                     "lint-fix",
+    #                 )
+    #             )
+    #         )
+    #         if rev[7] != b""
+    #         else []
+    #     )
+    # 
+    #     backsout = (
+    #         list(set(sys.intern(r) for r in rev[8].decode("utf-8").split(" ")))
+    #         if rev[8] != b""
+    #         else []
+    #     )
+    # 
+    #     commits.append(
+    #         Commit(
+    #             node=sys.intern(rev[0].decode("ascii")),
+    #             author=sys.intern(rev[1].decode("utf-8")),
+    #             desc=rev[2].decode("utf-8"),
+    #             pushdate=pushdate,
+    #             bug_id=bug_id,
+    #             backsout=backsout,
+    #             backedoutby=rev[4].decode("ascii"),
+    #             author_email=rev[5].decode("utf-8"),
+    #             reviewers=reviewers,
+    #         )
+    #     )
 
     return tuple(commits)
 
@@ -965,13 +965,13 @@ def _hg_log(revs: list[bytes], branch: str = "tip") -> tuple[Commit, ...]:
 def get_revs(hg, rev_start=0, rev_end="tip"):
     logger.info("Getting revs from %s to %s...", rev_start, rev_end)
 
-    args = hglib.util.cmdbuilder(
-        b"log",
-        template="{node}\n",
-        no_merges=True,
-        branch="tip",
-        rev=f"{rev_start}:{rev_end}",
-    )
+    # args = hglib.util.cmdbuilder(
+    #     b"log",
+    #     template="{node}\n",
+    #     no_merges=True,
+    #     branch="tip",
+    #     rev=f"{rev_start}:{rev_end}",
+    # )
     x = hg.rawcommand(args)
     return x.splitlines()
 
@@ -1200,7 +1200,7 @@ def calculate_experiences(
 
 
 def set_commits_to_ignore(
-    hg: hglib.client, repo_dir: str, commits: Iterable[Commit]
+    hg, repo_dir: str, commits: Iterable[Commit]
 ) -> None:
     # Skip commits which are in .hg-annotate-ignore-revs or which have
     # 'ignore-this-changeset' in their description (mostly consisting of very
@@ -1330,8 +1330,9 @@ def hg_log_multi(
 
 @lru_cache(maxsize=None)
 def get_first_pushdate(repo_dir):
-    with hglib.open(repo_dir) as hg:
-        return hg_log(hg, [b"0"])[0].pushdate
+    # with hglib.open(repo_dir) as hg:
+    #     return hg_log(hg, [b"0"])[0].pushdate
+    pass
 
 
 def download_commits(
@@ -1347,64 +1348,64 @@ def download_commits(
 ) -> tuple[CommitDict, ...]:
     assert revs is not None or rev_start is not None
 
-    with hglib.open(repo_dir) as hg:
-        if revs is None:
-            revs = get_revs(hg, rev_start)
-
-        if save or not os.path.exists("data/component_mapping.lmdb"):
-            logger.info("Downloading file->component mapping...")
-            download_component_mapping()
-
-        if save or not os.path.exists("data/coverage_mapping.lmdb"):
-            logger.info("Downloading commit->coverage mapping...")
-            download_coverage_mapping()
-
-        if len(revs) == 0:
-            logger.info("No commits to analyze")
-            return tuple()
-
-        first_pushdate = get_first_pushdate(repo_dir)
-
-        logger.info("Mining %d commits...", len(revs))
-
-        if not use_single_process:
-            logger.info("Using %d processes...", os.cpu_count())
-            commits = hg_log_multi(repo_dir, revs, branch)
-        else:
-            commits = hg_log(hg, revs, branch)
-
-        set_commits_to_ignore(hg, repo_dir, commits)
-
-        commits_num = len(commits)
-
-        logger.info("Mining %d patches...", commits_num)
-
-        global code_analysis_server
-
-        if not use_single_process:
-            code_analysis_server = rust_code_analysis_server.RustCodeAnalysisServer()
-
-            with concurrent.futures.ProcessPoolExecutor(
-                initializer=_init_process,
-                initargs=(repo_dir,),
-                # Fixing https://github.com/mozilla/bugbug/issues/3131
-                mp_context=mp.get_context("fork"),
-            ) as executor:
-                commits_iter = executor.map(_transform, commits, chunksize=64)
-                commits_iter = tqdm(commits_iter, total=commits_num)
-                commits = tuple(commits_iter)
-        else:
-            code_analysis_server = rust_code_analysis_server.RustCodeAnalysisServer(1)
-
-            get_component_mapping()
-
-            commits = tuple(transform(hg, repo_dir, c) for c in commits)
-
-            close_component_mapping()
+    # with hglib.open(repo_dir) as hg:
+    #     if revs is None:
+    #         revs = get_revs(hg, rev_start)
+    # 
+    #     if save or not os.path.exists("data/component_mapping.lmdb"):
+    #         logger.info("Downloading file->component mapping...")
+    #         download_component_mapping()
+    # 
+    #     if save or not os.path.exists("data/coverage_mapping.lmdb"):
+    #         logger.info("Downloading commit->coverage mapping...")
+    #         download_coverage_mapping()
+    # 
+    #     if len(revs) == 0:
+    #         logger.info("No commits to analyze")
+    #         return tuple()
+    # 
+    #     first_pushdate = get_first_pushdate(repo_dir)
+    # 
+    #     logger.info("Mining %d commits...", len(revs))
+    # 
+    #     if not use_single_process:
+    #         logger.info("Using %d processes...", os.cpu_count())
+    #         commits = hg_log_multi(repo_dir, revs, branch)
+    #     else:
+    #         commits = hg_log(hg, revs, branch)
+    # 
+    #     set_commits_to_ignore(hg, repo_dir, commits)
+    # 
+    #     commits_num = len(commits)
+    # 
+    #     logger.info("Mining %d patches...", commits_num)
+    # 
+    #     global code_analysis_server
+    # 
+    #     if not use_single_process:
+    #         code_analysis_server = rust_code_analysis_server.RustCodeAnalysisServer()
+    # 
+    #         with concurrent.futures.ProcessPoolExecutor(
+    #             initializer=_init_process,
+    #             initargs=(repo_dir,),
+    #             # Fixing https://github.com/mozilla/bugbug/issues/3131
+    #             mp_context=mp.get_context("fork"),
+    #         ) as executor:
+    #             commits_iter = executor.map(_transform, commits, chunksize=64)
+    #             commits_iter = tqdm(commits_iter, total=commits_num)
+    #             commits = tuple(commits_iter)
+    #     else:
+    #         code_analysis_server = rust_code_analysis_server.RustCodeAnalysisServer(1)
+    # 
+    #         get_component_mapping()
+    # 
+    #         commits = tuple(transform(hg, repo_dir, c) for c in commits)
+    # 
+    #         close_component_mapping()
 
     code_analysis_server.terminate()
 
-    calculate_experiences(commits, first_pushdate, save)
+    # calculate_experiences(commits, first_pushdate, save)
 
     logger.info("Applying final commits filtering...")
 
@@ -1446,26 +1447,26 @@ def clean(hg, repo_dir):
     hg.revert(repo_dir.encode("utf-8"), all=True)
 
     logger.info("Stripping non-public commits...")
-    try:
-        cmd = hglib.util.cmdbuilder(
-            b"strip", rev=b"roots(outgoing())", force=True, backup=False
-        )
-        hg.rawcommand(cmd)
-    except hglib.error.CommandError as e:
-        if b"abort: empty revision set" not in e.err:
-            raise
+    # try:
+    # cmd = hglib.util.cmdbuilder(
+    #     b"strip", rev=b"roots(outgoing())", force=True, backup=False
+    # )
+    # hg.rawcommand(cmd)
+    # except:   hglib.error.CommandError as e:
+    #     if b"abort: empty revision set" not in e.err:
+    #         raise
 
 
 def _build_hg_cmd(cmd, *args, **kwargs):
-    cmd = hglib.util.cmdbuilder(
-        cmd,
-        *args,
-        **kwargs,
-    )
+    # cmd = hglib.util.cmdbuilder(
+    #     cmd,
+    #     *args,
+    #     **kwargs,
+    # )
 
-    cmd.insert(0, hglib.HGPATH)
+    # cmd.insert(0, hglib.HGPATH)
 
-    return cmd
+    return None  # cmd
 
 
 def clone(
@@ -1474,8 +1475,8 @@ def clone(
     update: bool = False,
 ) -> None:
     try:
-        with hglib.open(repo_dir) as hg:
-            clean(hg, repo_dir)
+        # with hglib.open(repo_dir) as hg:
+        #     clean(hg, repo_dir)
 
         # Remove pushlog DB to make sure it's regenerated.
         try:
@@ -1484,13 +1485,13 @@ def clone(
             logger.info("pushlog database doesn't exist")
 
         # Pull, to make sure the pushlog is generated.
-        with hglib.open(repo_dir) as hg:
-            logger.info("Pulling %s", repo_dir)
-            hg.pull(update=update)
-            logger.info("%s pulled", repo_dir)
+        # with hglib.open(repo_dir) as hg:
+        #     logger.info("Pulling %s", repo_dir)
+        #     hg.pull(update=update)
+        #     logger.info("%s pulled", repo_dir)
 
         return
-    except hglib.error.ServerError as e:
+    except:  # hglib.error.ServerError as e:
         if "abort: repository" not in str(e) and "not found" not in str(e):
             raise
 
