@@ -34,5 +34,5 @@ zstandard==0.21.0
 mlflow==2.5.0
 mlflow-extend=0.1.6
 google-auth==2.22.0
-google-cloud-artifact-registry=1.8.2
+google-cloud-artifact-registry==1.8.2
 google-cloud-storage==2.10.0

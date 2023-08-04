@@ -7,6 +7,8 @@ import os
 import sys
 from logging import INFO, basicConfig, getLogger
 
+import mlflow
+
 from bugbug import db
 from bugbug.models import MODELS, get_model_class
 from bugbug.utils import CustomJsonEncoder, zstd_compress
@@ -21,7 +23,8 @@ class Trainer(object):
     def go(self, args):
         # Download datasets that were built by bugbug_data.
         os.makedirs("data", exist_ok=True)
-
+        if args.experiment_name is not None:
+            mlflow.set_experiment(experiment_name=args.experiment_name)
         if args.classifier != "default":
             assert (
                 args.model in MODELS_WITH_TYPE
@@ -75,6 +78,12 @@ def parse_args(args):
     main_parser = argparse.ArgumentParser(description=description)
 
     parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument(
+        "--experiment_name",
+        type=str,
+        help="MLFLow experiment name for training",
+    )
+
     parser.add_argument(
         "--limit",
         type=int,

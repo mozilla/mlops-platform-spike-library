@@ -1,4 +1,4 @@
-name: train_spambug
+name: SpambugTraining
 
 python_env: python_env.yaml
 
