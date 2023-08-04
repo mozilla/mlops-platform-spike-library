@@ -1,0 +1,9 @@
+name: train_spambug
+
+python_env: python_env.yaml
+
+entry_points:
+  main:
+    parameters:
+      model_to_train: {type: str, default: "spambug"}
+    command: "python -m scripts.trainer {model_to_train}"
