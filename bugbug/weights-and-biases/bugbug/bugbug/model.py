@@ -58,6 +58,9 @@ def classification_report_imbalanced_values(
     precision, recall, f1, support = precision_recall_fscore_support(
         y_true, y_pred, labels=labels, average=None, sample_weight=sample_weight
     )
+    wandb.summary["Custom Mozilla String Metric"] = "Hello"
+    wandb.summary["Custom Mozilla Numeric Metric"] = 0.77
+
     # Specificity
     specificity = specificity_score(
         y_true, y_pred, labels=labels, average=None, sample_weight=sample_weight
