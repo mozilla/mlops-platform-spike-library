@@ -1,6 +1,7 @@
-name: SpambugTraining
+name: spambug_training
 
-python_env: python_env.yaml
+docker_env:
+  image: python:3.9
 
 entry_points:
   main:
