@@ -32,8 +32,8 @@ from bugbug.utils import split_tuple_generator, to_array
 
 import wandb
 from wandb.xgboost import WandbCallback
-
-import pandas as pd
+import scipy.sparse as sparse
+from tempfile import TemporaryFile
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -389,6 +389,26 @@ class Model:
         else:
             pipeline = self.clf
 
+        sparse.save_npz("X_train", X_train)
+        artifact = wandb.Artifact(name="X_train", type="data")
+        artifact.add_file("X_train.npz")
+        run.log_artifact(artifact)
+
+        sparse.save_npz("X_test", X_test)
+        artifact = wandb.Artifact(name="X_test", type="data")
+        artifact.add_file("X_test.npz")
+        run.log_artifact(artifact)
+
+        np.savetxt('y_train.txt', y_train)
+        artifact = wandb.Artifact(name="y_train", type="data")
+        artifact.add_file("y_train.txt")
+        run.log_artifact(artifact)
+
+        np.savetxt('y_test.txt', y_test)
+        artifact = wandb.Artifact(name="y_test", type="data")
+        artifact.add_file("y_test.txt")
+        run.log_artifact(artifact)
+
         tracking_metrics = {}
 
         # Use k-fold cross validation to evaluate results.
@@ -427,22 +447,6 @@ class Model:
             self.le.transform(y_train),
             callbacks=[WandbCallback(log_model=True)]
         )
-
-        # artifact = wandb.Artifact(name="X_train", type="data")
-        # artifact.add_file(X_train.to_csv())
-        # run.log_artifact(artifact)
-        #
-        # artifact = wandb.Artifact(name="X_test", type="data")
-        # artifact.add_file(X_test.to_csv())
-        # run.log_artifact(artifact)
-        #
-        # artifact = wandb.Artifact(name="y_train", type="data")
-        # artifact.add_file(y_train.to_csv())
-        # run.log_artifact(artifact)
-        #
-        # artifact = wandb.Artifact(name="y_test", type="data")
-        # artifact.add_file(y_test.to_csv())
-        # run.log_artifact(artifact)
 
         logger.info("Model trained")
 
