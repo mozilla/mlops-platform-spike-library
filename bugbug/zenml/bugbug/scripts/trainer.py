@@ -6,6 +6,7 @@ import json
 import os
 import sys
 from logging import INFO, basicConfig, getLogger
+from zenml import pipeline, step
 
 from bugbug import db
 from bugbug.models import MODELS, get_model_class
@@ -16,8 +17,23 @@ MODELS_WITH_TYPE = ("component",)
 basicConfig(level=INFO)
 logger = getLogger(__name__)
 
+@step(enable_cache=False)
+def download_datasets(model_obj, args):
+    if args.download_db:
+        for required_db in model_obj.training_dbs:
+            assert db.download(required_db)
+
+        if args.download_eval:
+            model_obj.download_eval_dbs()
+    else:
+        logger.info("Skipping download of the databases")
+
+@step(enable_cache=False)
+def train(model_obj, args):
+    return model_obj.train(limit=args.limit)
 
 class Trainer(object):
+
     def go(self, args):
         # Download datasets that were built by bugbug_data.
         os.makedirs("data", exist_ok=True)
@@ -38,17 +54,11 @@ class Trainer(object):
         }
         model_obj = model_class(**parameters)
 
-        if args.download_db:
-            for required_db in model_obj.training_dbs:
-                assert db.download(required_db)
-
-            if args.download_eval:
-                model_obj.download_eval_dbs()
-        else:
-            logger.info("Skipping download of the databases")
+        download_datasets(model_obj, args)
 
         logger.info("Training *%s* model", model_name)
-        metrics = model_obj.train(limit=args.limit)
+        metrics = train(model_obj, args)
+        #metrics = model_obj.train(limit=args.limit)
 
         # Save the metrics as a file that can be uploaded as an artifact.
         metric_file_path = "metrics.json"
@@ -149,7 +159,7 @@ def parse_args(args):
 
     return main_parser.parse_args(args)
 
-
+@pipeline
 def main():
     args = parse_args(sys.argv[1:])
 
