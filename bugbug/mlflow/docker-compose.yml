@@ -1,6 +1,7 @@
 version: "3.2"
 services:
   bugbug-base:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: infra/dockerfile.base
