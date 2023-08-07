@@ -7,7 +7,7 @@ import os
 import sys
 from logging import INFO, basicConfig, getLogger
 import wandb
-
+import pickle
 
 from bugbug import db
 from bugbug.models import MODELS, get_model_class
@@ -71,10 +71,6 @@ class Trainer(object):
         zstd_compress(model_file_name)
 
         logger.info("Model compressed")
-
-        artifact = wandb.Artifact(name="model_file", type="data")
-        artifact.add_file(f"{model_name}model")
-        wandb_run.log_artifact(artifact)
 
         if model_obj.store_dataset:
             assert os.path.exists(f"{model_file_name}_data_X")

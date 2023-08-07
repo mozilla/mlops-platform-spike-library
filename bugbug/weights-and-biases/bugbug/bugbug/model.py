@@ -442,6 +442,10 @@ class Model:
 
         logger.info(f"X_test: {X_test.shape}, y_test: {y_test.shape}")
 
+        if run.sweep_id: # if we are running a grid search from wandb, use the hyperparameter options from there
+            self.clf.max_depth = wandb.config.max_depth
+            self.clf.colsample_bytree = wandb.config.colsample_bytree
+
         self.clf.fit(
             X_train,
             self.le.transform(y_train),
@@ -450,7 +454,16 @@ class Model:
 
         logger.info("Model trained")
 
+        file = open('model_file', 'wb')
+        pickle.dump(self.clf, file)
+        file.close()
+        artifact = wandb.Artifact(name="model_file", type="data")
+        artifact.add_file("model_file.pkl")
+        run.log_artifact(artifact)
+
         feature_names = self.get_human_readable_feature_names()
+
+        self.calculate_importance = True # changed for the purpose of trying out wandb
         if self.calculate_importance and len(feature_names):
             explainer = shap.TreeExplainer(self.clf)
             shap_values = explainer.shap_values(X_train)
@@ -480,6 +493,17 @@ class Model:
             important_features = self.get_important_features(
                 importance_cutoff, shap_values
             )
+
+            run.log({"feature_importance_image" : wandb.Image("feature_importance.png")})
+
+            # Planning to get this working with Claire and Tim from wandb
+            # with wandb.init(project="feature-importance-plot") as run:
+            #     fields = {"rank order": "rank_order", "feature name": "feature_name",
+            #               "feature importance": "feature_importance"}
+            #     my_custom_chart = wandb.plot_table(vega_spec_name="ctroy/mlops-mozilla/feature_importance",
+            #                                        data_table=wandb.Table(dataframe=WHAT_GOES_HERE),
+            #                                        fields=fields)
+            #     wandb.log({"feature-importance-plot": my_custom_chart})
 
             self.print_feature_importances(important_features)
 
