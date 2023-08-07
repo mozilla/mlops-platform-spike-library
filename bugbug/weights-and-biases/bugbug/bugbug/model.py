@@ -454,12 +454,12 @@ class Model:
 
         logger.info("Model trained")
 
-        file = open('model_file', 'wb')
-        pickle.dump(self.clf, file)
-        file.close()
-        artifact = wandb.Artifact(name="model_file", type="data")
-        artifact.add_file("model_file.pkl")
-        run.log_artifact(artifact)
+        # file = open('model_file', 'wb')
+        # pickle.dump(self.clf, file)
+        # file.close()
+        # artifact = wandb.Artifact(name="model_file", type="data")
+        # artifact.add_file("model_file.pkl")
+        # run.log_artifact(artifact)
 
         feature_names = self.get_human_readable_feature_names()
 
