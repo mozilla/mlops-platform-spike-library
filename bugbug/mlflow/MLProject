@@ -1,7 +1,7 @@
-name: spambug_training
+name: spambugtraining
 
 docker_env:
-  image: us-central1-docker.pkg.dev/moz-fx-dev-ctroy-ml-ops-spikes/bugbug-training-runs-mlflow/training_run:latest
+  image: us-central1-docker.pkg.dev/moz-fx-dev-ctroy-ml-ops-spikes/bugbug-training-runs-mlflow/training_run4:latest
 
 entry_points:
   main:
