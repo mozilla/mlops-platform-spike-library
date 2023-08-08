@@ -454,7 +454,7 @@ class Model:
         logger.info("Model trained")
 
         file = open('model_file.pkl', 'wb')
-        pickle.dump(self.clf, file)
+        pickle.dump(self, file)
         file.close()
         artifact = wandb.Artifact(name="model_file.pkl", type="model")
         artifact.add_file("model_file.pkl")
@@ -502,7 +502,7 @@ class Model:
             feature_importance_df.sort_values("feature_importance", ignore_index=True, inplace=True)
             feature_importance_df = feature_importance_df.reset_index().rename(columns={"index": "rank"})
             fields = {"rank order": "rank", "feature name": "feature_name", "feature importance": "feature_importance"}
-            my_custom_chart = wandb.plot_table(vega_spec_name="ctroy/mlops-mozilla/feature_importance",
+            my_custom_chart = wandb.plot_table(vega_spec_name="mlops-mozilla/feature_importance",
                                                data_table=wandb.Table(dataframe=feature_importance_df),
                                                fields=fields)
             wandb.log({"feature-importance-plot-from-wandb": my_custom_chart})

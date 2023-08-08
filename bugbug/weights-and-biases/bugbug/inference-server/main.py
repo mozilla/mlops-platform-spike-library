@@ -3,11 +3,16 @@ from fastapi.responses import RedirectResponse, Response
 import wandb
 from pydantic import BaseModel
 import pickle
+import sys
+
+sys.path.append('/Users/chelseatroy/mozilla/mlops-platform-spike-library/bugbug/weights-and-biases/bugbug')
+import bugbug
+from bugbug import bugzilla
 
 import os
 
-class Bug(BaseModel):
-    values: list
+class SwarmOfBugs(BaseModel):
+    bug_ids: list
 
 app = FastAPI()
 
@@ -21,6 +26,8 @@ model_file_name = os.listdir(f"artifacts/{model_directory_name}")[0]
 file = open(f"artifacts/{model_directory_name}/{model_file_name}", 'rb')
 spambug_model = pickle.load(file)
 file.close()
+print("MODEL TYPE INCOMING")
+print(type(spambug_model))
 
 
 @app.get("/")
@@ -31,7 +38,15 @@ async def redirect_home_to_docs():
 
 
 @app.post('/spambug_prediction')
-async def get_spambug_prediction(input: Bug):
-    result = spambug_model.classify(input.values, True)
+async def get_spambug_prediction(swarm: SwarmOfBugs):
+    bugs = bugzilla.get(swarm.bug_ids)
+    probabilities = spambug_model.classify(list(bugs.values()), True)
+    prediction_probabilities = []
+    for index, probability_pair in enumerate(probabilities.tolist()):
+        bug_proba_dict = {}
+        bug_proba_dict['bug_id'] = swarm.bug_ids[index]
+        bug_proba_dict['probability_legitimate_bug'] = probability_pair[0]
+        bug_proba_dict['probability_spam_bug'] = probability_pair[1]
+        prediction_probabilities.append(bug_proba_dict)
 
-    return {"prediction": result}
+    return {"prediction_probabilities": prediction_probabilities}
