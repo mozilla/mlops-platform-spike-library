@@ -4,7 +4,7 @@ metadata:
   name: "{replaced with MLflow Project name}"
   namespace: default
 spec:
-  ttlSecondsAfterFinished: 100
+  ttlSecondsAfterFinished: 1000
   backoffLimit: 0
   template:
     spec:
@@ -15,7 +15,7 @@ spec:
         env: []
         resources:
           limits:
-            memory: 512Mi
+            memory: 4Gi
           requests:
-            memory: 256Mi
+            memory: 4Gi
       restartPolicy: Never

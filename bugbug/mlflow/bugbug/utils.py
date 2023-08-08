@@ -294,16 +294,28 @@ def extract_file(path: str) -> None:
 
 
 class CustomJsonEncoder(json.JSONEncoder):
-    """A custom Json Encoder to support Numpy types."""
+    def default(self, obj_to_encode):
+        """Pandas and Numpy have some specific types that we want to ensure
+        are coerced to Python types, for JSON generation purposes. This attempts
+        to do so where applicable.
+        """
+        # Pandas dataframes have a to_json() method, so we'll check for that and
+        # return it if so.
+        if hasattr(obj_to_encode, 'to_json'):
+            return obj_to_encode.to_json()
 
-    def default(self, obj):
-        try:
-            return np.asscalar(obj)
-        except (ValueError, IndexError, AttributeError, TypeError):
-            pass
+        # Numpy objects report themselves oddly in error logs, but this generic
+        # type mostly captures what we're after.
+        if isinstance(obj_to_encode, np.generic):
+            return obj_to_encode.item()
 
-        return super().default(obj)
+        # ndarray -> list, pretty straightforward.
+        if isinstance(obj_to_encode, np.ndarray):
+            return obj_to_encode.to_list()
 
+        # If none of the above apply, we'll default back to the standard JSON encoding
+        # routines and let it work normally.
+        return super().default(obj_to_encode)
 
 class ExpQueue:
     def __init__(self, start_day: int, maxlen: int, default: Any) -> None:

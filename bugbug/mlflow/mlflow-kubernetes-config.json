@@ -1,4 +1,4 @@
 {
-    "repository-uri": "us-central1-docker.pkg.dev/moz-fx-dev-ctroy-ml-ops-spikes/bugbug-training-runs-mlflow/test1",
+    "repository-uri": "us-central1-docker.pkg.dev/moz-fx-dev-ctroy-ml-ops-spikes/bugbug-training-runs-mlflow/bugbug-kube-run",
     "kube-job-template-path": "kubernetes_job_template.yaml"
 }

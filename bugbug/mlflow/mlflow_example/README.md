@@ -5,7 +5,7 @@ It is adapted for GCS
 
 gcloud auth login
 
-gcloud iam service-accounts keys create ./mlflow-log-pusher-key.json --iam-account mlflow-log-pusher@moz-fx-dev-ctroy-ml-ops-spikesiam.gserviceaccount.com
+gcloud iam service-accounts keys create ./mlflow-log-pusher-key.json --iam-account mlflow-log-pusher@moz-fx-dev-ctroy-ml-ops-spikes.iam.gserviceaccount.com
 
 MLFLOW_EXPERIMENT_ID=2 # required if you don't want 'Default' experiment
 

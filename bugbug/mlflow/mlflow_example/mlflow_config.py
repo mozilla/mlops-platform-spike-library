@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from subprocess import check_output
 
 import six
 from mlflow import set_tracking_uri, set_experiment
