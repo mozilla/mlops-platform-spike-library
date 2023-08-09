@@ -36,3 +36,4 @@ tenacity==8.2.2
 tqdm==4.65.0
 xgboost==1.7.6
 zstandard==0.21.0
+setuptools~=68.0.0
