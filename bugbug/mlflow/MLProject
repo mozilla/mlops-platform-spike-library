@@ -1,0 +1,10 @@
+name: spambugtraining
+
+docker_env:
+  image: us-central1-docker.pkg.dev/moz-fx-dev-ctroy-ml-ops-spikes/bugbug-training-runs-mlflow/bugbug_training_base:latest
+
+entry_points:
+  main:
+    parameters:
+      model_to_train: {type: str, default: "spambug"}
+    command: "python -m scripts.trainer {model_to_train}"

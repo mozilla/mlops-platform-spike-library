@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{replaced with MLflow Project name}"
+  namespace: default
+spec:
+  ttlSecondsAfterFinished: 1000
+  backoffLimit: 0
+  template:
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-accelerator: nvidia-tesla-t4
+      containers:
+      - name: "{replaced with MLflow Project name}"
+        image: "{replaced with URI of Docker image created during Project execution}"
+        command: ["{replaced with MLflow Project entry point command}"]
+        env: []
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+            memory: 16Gi
+          requests:
+            cpu: 18
+            memory: 16Gi
+      restartPolicy: Never
