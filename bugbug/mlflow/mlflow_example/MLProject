@@ -1,0 +1,11 @@
+name: docker-example
+
+docker_env:
+  image: us-central1-docker.pkg.dev/moz-fx-dev-ctroy-ml-ops-spikes/bugbug-training-runs-mlflow/example
+  environment: ["GOOGLE_APPLICATION_CREDENTIALS"]
+entry_points:
+  main:
+    parameters:
+      alpha: {type: float, default: 1.0}
+      l1_ratio: {type: float, default: 0.1}
+    command: "python train.py --alpha {alpha} --l1-ratio {l1_ratio}"
