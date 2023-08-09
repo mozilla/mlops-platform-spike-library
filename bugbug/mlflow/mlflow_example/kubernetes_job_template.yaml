@@ -4,17 +4,22 @@ metadata:
   name: "{replaced with MLflow Project name}"
   namespace: default
 spec:
-  ttlSecondsAfterFinished: 100
+  ttlSecondsAfterFinished: 10000
   backoffLimit: 0
   template:
     spec:
+      nodeSelector:
+        cloud.google.com/gke-accelerator: nvidia-tesla-t4
       containers:
         - name: "{replaced with MLflow Project name}"
           image: "{replaced with URI of Docker image created during Project execution}"
           command: ["{replaced with MLflow Project entry point command}"]
           resources:
             limits:
-              memory: 512Mi
+              nvidia.com/gpu: 1
+              memory: 16Gi
             requests:
-              memory: 256Mi
+              cpu: 18
+              memory: 16Gi
       restartPolicy: Never
+      

@@ -8,6 +8,8 @@ spec:
   backoffLimit: 0
   template:
     spec:
+      nodeSelector:
+        cloud.google.com/gke-accelerator: nvidia-tesla-t4
       containers:
       - name: "{replaced with MLflow Project name}"
         image: "{replaced with URI of Docker image created during Project execution}"
@@ -15,7 +17,9 @@ spec:
         env: []
         resources:
           limits:
-            memory: 4Gi
+            nvidia.com/gpu: 1
+            memory: 16Gi
           requests:
-            memory: 4Gi
+            cpu: 18
+            memory: 16Gi
       restartPolicy: Never
