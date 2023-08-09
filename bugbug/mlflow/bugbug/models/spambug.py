@@ -6,13 +6,16 @@
 import logging
 
 import xgboost
-from imblearn.over_sampling import BorderlineSMOTE
+from imblearn.over_sampling import BorderlineSMOTE, SVMSMOTE
 from sklearn.compose import ColumnTransformer
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.pipeline import Pipeline
 
 from bugbug import bug_features, bugzilla, feature_cleanup, utils
 from bugbug.model import BugModel
+from bugbug.trackers.mlflow_tracker import MLFlowTracker
+from bugbug.trackers.tracking_provider import ModelType
+from mlflow_example.mlflow_config import mlflow_setup_tokens
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -21,7 +24,12 @@ logger = logging.getLogger(__name__)
 class SpamBugModel(BugModel):
     def __init__(self, lemmatization=False):
         BugModel.__init__(self, lemmatization)
-
+        mlflow_setup_tokens()
+        self.tracking_provider = MLFlowTracker(model_type=ModelType.SKLearn)
+#        self.tracking_provider.start_run(type(self).__name__,
+#                                             positive_label=type(self).__name__)
+        self.tracking_provider.start_run()
+        self.tracking_provider.track_param("data_sampler", "BorderlineSMOTE")
         self.sampler = BorderlineSMOTE(random_state=0)
         self.calculate_importance = False
 

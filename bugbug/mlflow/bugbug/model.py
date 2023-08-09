@@ -2,14 +2,16 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
-
+import json
 import logging
 import pickle
 from collections import defaultdict
 from typing import Any
 
 import matplotlib
+import mlflow
 import numpy as np
+import pandas as pd
 import shap
 from imblearn.metrics import (
     classification_report_imbalanced,
@@ -18,6 +20,7 @@ from imblearn.metrics import (
     specificity_score,
 )
 from imblearn.pipeline import make_pipeline
+from mlflow.models import infer_signature
 from sklearn import metrics
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import precision_recall_fscore_support
@@ -28,6 +31,9 @@ from tabulate import tabulate
 from bugbug import bugzilla, db, repository
 from bugbug.github import Github
 from bugbug.nlp import SpacyVectorizer
+from bugbug.trackers.mlflow_tracker import MLFlowTracker
+from bugbug.trackers.spambug_inference import SpambugInference
+from bugbug.trackers.tracking_provider import ModelType
 from bugbug.utils import split_tuple_generator, to_array
 
 logging.basicConfig(level=logging.INFO)
@@ -128,7 +134,6 @@ def print_labeled_confusion_matrix(confusion_matrix, labels, is_multilabel=False
             end="\n\n",
         )
 
-
 def sort_class_names(class_names):
     if len(class_names) == 2:
         class_names = sorted(list(class_names), reverse=True)
@@ -138,7 +143,7 @@ def sort_class_names(class_names):
     return class_names
 
 
-class Model:
+class Model(mlflow.pyfunc.PythonModel):
     def __init__(self, lemmatization=False):
         if lemmatization:
             self.text_vectorizer = SpacyVectorizer
@@ -161,6 +166,13 @@ class Model:
 
         self.le = LabelEncoder()
 
+    def load_context(self, context):
+        """This method is called when loading an MLflow model with pyfunc.load_model(), as soon as the Python Model is constructed.
+        Args:
+            context: MLflow context where the model artifact is stored.
+        """
+        with open(context.artifacts["spambugmodel_full_model.plk"], "rb") as f:
+            return pickle.load(f)
     def download_eval_dbs(
         self, extract: bool = True, ensure_exist: bool = True
     ) -> None:
@@ -339,9 +351,12 @@ class Model:
         """Subclasses implement their own function to gather labels."""
         pass
 
+    def get_model_name(self):
+        return self.__class__.__name__.lower()
     def train(self, importance_cutoff=0.15, limit=None):
         classes, self.class_names = self.get_labels()
         self.class_names = sort_class_names(self.class_names)
+        is_binary = len(self.class_names) == 2
 
         # Get items and labels, filtering out those for which we have no labels.
         X_gen, y = split_tuple_generator(lambda: self.items_gen(classes))
@@ -357,10 +372,12 @@ class Model:
             X = X[:limit]
             y = y[:limit]
 
+        if self.tracking_provider is not None:
+            self.tracking_provider.log_scikit_model(self.le, f"{self.get_model_name()}_le", X, y)
+
         logger.info(f"X: {X.shape}, y: {y.shape}")
 
         is_multilabel = isinstance(y[0], np.ndarray)
-        is_binary = len(self.class_names) == 2
 
         # Split dataset in training and test.
         X_train, X_test, y_train, y_test = self.train_test_split(X, y)
@@ -402,9 +419,15 @@ class Model:
 
         logger.info(f"X_test: {X_test.shape}, y_test: {y_test.shape}")
 
-        self.clf.fit(X_train, self.le.transform(y_train))
+        y_train_transformed = self.le.transform(y_train)
+        self.clf.fit(X_train, y_train_transformed)
 
         logger.info("Model trained")
+
+        if self.tracking_provider is not None:
+            self.tracking_provider.log_scikit_model(self.clf, f"{self.get_model_name()}_clf", X, y_train_transformed)
+            self.tracking_provider.log_data_input(X_train, "X_train")
+            self.tracking_provider.log_data_input(y_train, "y_train")
 
         feature_names = self.get_human_readable_feature_names()
         if self.calculate_importance and len(feature_names):
@@ -430,6 +453,8 @@ class Model:
             )
 
             matplotlib.pyplot.savefig("feature_importance.png", bbox_inches="tight")
+            if self.tracking_provider is not None:
+                self.tracking_provider.log_artifact("feature_importance.png", name="Feature Importance")
             matplotlib.pyplot.xlabel("Impact on model output")
             matplotlib.pyplot.clf()
 
@@ -443,7 +468,6 @@ class Model:
             feature_report = self.save_feature_importances(
                 important_features, feature_names
             )
-
             tracking_metrics["feature_report"] = feature_report
 
         logger.info("Training Set scores:")
@@ -488,6 +512,9 @@ class Model:
         print_labeled_confusion_matrix(
             confusion_matrix, self.class_names, is_multilabel=is_multilabel
         )
+        if self.tracking_provider is not None:
+            self.tracking_provider.log_confusion_matrix(confusion_matrix, self.class_names,
+                                                        name=f"{self.get_model_name()}_clf")
 
         tracking_metrics["confusion_matrix"] = confusion_matrix.tolist()
 
@@ -551,6 +578,8 @@ class Model:
             print_labeled_confusion_matrix(
                 confusion_matrix, confidence_class_names, is_multilabel=is_multilabel
             )
+            if self.tracking_provider is not None:
+                self.tracking_provider.log_confusion_matrix(confusion_matrix, confidence_class_names, name=f"{self.get_model_name()}_clf_confidencethresh_{confidence_threshold}")
 
         self.evaluation()
 
@@ -565,18 +594,51 @@ class Model:
 
             logger.info(f"X_train: {X_train.shape}, y_train: {y_train.shape}")
 
-            self.clf.fit(X_train, self.le.transform(y_train))
+            y_train_transformed = self.le.transform(y_train)
+            self.clf.fit(X_train, y_train_transformed)
 
-        with open(self.__class__.__name__.lower(), "wb") as f:
+            if self.tracking_provider is not None:
+                self.tracking_provider.log_scikit_model(self.clf, f"{self.get_model_name()}_clf_retrained", X_train,
+                                                        y_train_transformed)
+
+        with open(self.get_model_name(), "wb") as f:
             pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
 
+        if self.tracking_provider is not None:
+            model_for_inference = SpambugInference(self.extraction_pipeline, self.clf, self.le)
+            with open("./tests/fixtures/bugs.json") as f:
+                example_bugs = [json.loads(line) for line in f]
+            for bug in example_bugs:
+                bug["filed_via"] = "bugzilla"
+            prediction_input = [json.dumps(e) for e in example_bugs[:3]]
+            prediction_output = model_for_inference.predict(None, prediction_input)
+            #mlflow.pyfunc.save_model("spambug_full_model", python_model=model_for_inference,
+            #                         code_path=["./bugbug/trackers/spambug_inference.py"],
+            #                         input_example=prediction_input)
+            signature = infer_signature(prediction_input, prediction_output)
+            mlflow.pyfunc.log_model(
+                artifact_path="spambug_full_model",
+                python_model=model_for_inference,
+                code_path=["./bugbug/trackers/spambug_inference.py",
+                           "./bugbug/bug_features.py",
+                           "./bugbug/bug_snapshot.py",
+                           "./bugbug/repository.py",
+                           "./bugbug/db.py",
+                           "./bugbug/rust_code_analysis_server.py",
+                           "./bugbug/utils.py",
+                           "./bugbug/__init__.py"
+                           ],
+                signature=signature
+            )
         if self.store_dataset:
-            with open(f"{self.__class__.__name__.lower()}_data_X", "wb") as f:
+            with open(f"{self.get_model_name()}_data_X", "wb") as f:
                 pickle.dump(X, f, protocol=pickle.HIGHEST_PROTOCOL)
-
-            with open(f"{self.__class__.__name__.lower()}_data_y", "wb") as f:
+            with open(f"{self.get_model_name()}_data_y", "wb") as f:
                 pickle.dump(y, f, protocol=pickle.HIGHEST_PROTOCOL)
 
+        if self.tracking_provider is not None:
+            self.tracking_provider.track_all_metrics(tracking_metrics)
+            self.tracking_provider.end_run()
         return tracking_metrics
 
     @staticmethod

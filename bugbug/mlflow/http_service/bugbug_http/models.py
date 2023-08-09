@@ -85,9 +85,11 @@ def classify_bug(model_name: str, bug_ids: Sequence[int], bugzilla_token: str) -
 
     # TODO: Classify could choke on a single bug which could make the whole
     # job to fails. What should we do here?
-    probs = model.classify(list(bugs.values()), True)
-    indexes = probs.argmax(axis=-1)
-    suggestions = model.le.inverse_transform(indexes)
+
+    prediction = model.predict()
+    probs = prediction["probs"]
+    indexes = prediction["indexes"]
+    suggestions = prediction["suggestions"]
 
     probs_list = probs.tolist()
     indexes_list = indexes.tolist()
