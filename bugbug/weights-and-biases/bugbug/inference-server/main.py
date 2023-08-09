@@ -26,9 +26,6 @@ model_file_name = os.listdir(f"artifacts/{model_directory_name}")[0]
 file = open(f"artifacts/{model_directory_name}/{model_file_name}", 'rb')
 spambug_model = pickle.load(file)
 file.close()
-print("MODEL TYPE INCOMING")
-print(type(spambug_model))
-
 
 @app.get("/")
 async def redirect_home_to_docs():
@@ -45,6 +42,8 @@ async def get_spambug_prediction(swarm: SwarmOfBugs):
     for index, probability_pair in enumerate(probabilities.tolist()):
         bug_proba_dict = {}
         bug_proba_dict['bug_id'] = swarm.bug_ids[index]
+        bug_proba_dict['summary'] = bugs[swarm.bug_ids[index]].get('summary')
+        bug_proba_dict['creator_detail'] = bugs[swarm.bug_ids[index]].get('creator_detail')
         bug_proba_dict['probability_legitimate_bug'] = probability_pair[0]
         bug_proba_dict['probability_spam_bug'] = probability_pair[1]
         prediction_probabilities.append(bug_proba_dict)
