@@ -1,4 +1,4 @@
-from metaflow import FlowSpec, step, conda_base, conda
+from metaflow import FlowSpec, step, conda_base, conda, kubernetes
 
 
 from scripts.trainer import Trainer, parse_args
@@ -25,6 +25,7 @@ class SpamBugFlow(FlowSpec):
     1) Uses the original CLI class to perform training.
     """
 
+    @kubernetes(image="us-central1-docker.pkg.dev/moz-fx-dev-ctroy-ml-ops-spikes/bugbug-training-runs-mlflow/metaflow_base:latest", cpu=16)
     @step
     def start(self):
         """
@@ -33,6 +34,7 @@ class SpamBugFlow(FlowSpec):
 
         self.next(self.train)
 
+    @kubernetes(image="us-central1-docker.pkg.dev/moz-fx-dev-ctroy-ml-ops-spikes/bugbug-training-runs-mlflow/metaflow_base:latest")
     @step
     def train(self):
         """
@@ -45,6 +47,7 @@ class SpamBugFlow(FlowSpec):
 
         self.next(self.end)
 
+    @kubernetes(image="us-central1-docker.pkg.dev/moz-fx-dev-ctroy-ml-ops-spikes/bugbug-training-runs-mlflow/metaflow_base:latest")
     @step
     def end(self):
         """
