@@ -495,7 +495,7 @@ class Model:
 
             run.log({"feature_importance_image" : wandb.Image("feature_importance.png")})
 
-            ## where to get feature importance from the xgboost model according to Tim at wandb
+            ## How do do a custom feature importance chart according to Tim at wandb
             booster = self.clf.get_booster()
             feature_importance_df = pd.DataFrame(booster.get_score(fmap='', importance_type='weight').items(),
                               columns=["feature_name", "feature_importance"])
