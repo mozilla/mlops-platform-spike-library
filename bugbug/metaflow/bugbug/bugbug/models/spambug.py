@@ -16,6 +16,7 @@ from bugbug.model import BugModel
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+from sklearn.preprocessing import LabelEncoder
 
 
 class SpamBugModel(BugModel):
@@ -25,7 +26,7 @@ class SpamBugModel(BugModel):
         self.sampler = BorderlineSMOTE(random_state=0)
         self.calculate_importance = False
 
-        feature_extractors = [
+        self.feature_extractors = [
             bug_features.has_str(),
             bug_features.has_regression_range(),
             bug_features.severity(),
@@ -49,18 +50,20 @@ class SpamBugModel(BugModel):
             bug_features.filed_via(),
         ]
 
-        cleanup_functions = [
+        self.cleanup_functions = [
             feature_cleanup.fileref(),
             feature_cleanup.url(),
             feature_cleanup.synonyms(),
         ]
 
+    def setup(self):
+        self.le = LabelEncoder()
         self.extraction_pipeline = Pipeline(
             [
                 (
                     "bug_extractor",
                     bug_features.BugExtractor(
-                        feature_extractors, cleanup_functions, rollback=True
+                        self.feature_extractors, self.cleanup_functions, rollback=True
                     ),
                 ),
                 (

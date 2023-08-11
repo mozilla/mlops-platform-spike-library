@@ -22,7 +22,6 @@ from sklearn import metrics
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import precision_recall_fscore_support
 from sklearn.model_selection import cross_validate, train_test_split
-from sklearn.preprocessing import LabelEncoder
 from tabulate import tabulate
 
 from bugbug import bugzilla, db, repository
@@ -159,7 +158,6 @@ class Model:
         # DBs and DB support files required at runtime.
         self.eval_dbs: dict[str, tuple[str, ...]] = {}
 
-        self.le = LabelEncoder()
 
     def download_eval_dbs(
         self, extract: bool = True, ensure_exist: bool = True
@@ -339,12 +337,13 @@ class Model:
         """Subclasses implement their own function to gather labels."""
         pass
 
-    def train(self, importance_cutoff=0.15, limit=None):
+    def setup_data_and_splits(self, limit=None):
         classes, self.class_names = self.get_labels()
         self.class_names = sort_class_names(self.class_names)
 
         # Get items and labels, filtering out those for which we have no labels.
         X_gen, y = split_tuple_generator(lambda: self.items_gen(classes))
+        self.X_gen = X_gen
 
         # Extract features from the items.
         X = self.extraction_pipeline.fit_transform(X_gen)
@@ -359,11 +358,17 @@ class Model:
 
         logger.info(f"X: {X.shape}, y: {y.shape}")
 
-        is_multilabel = isinstance(y[0], np.ndarray)
-        is_binary = len(self.class_names) == 2
+        self.is_multilabel = isinstance(y[0], np.ndarray)
+        self.is_binary = len(self.class_names) == 2
 
         # Split dataset in training and test.
         X_train, X_test, y_train, y_test = self.train_test_split(X, y)
+        self.X_train = X_train
+        self.X_test = X_test
+        self.y_train = y_train
+        self.y_test = y_test
+
+    def train(self):
         if self.sampler is not None:
             pipeline = make_pipeline(self.sampler, self.clf)
         else:
@@ -378,7 +383,7 @@ class Model:
                 scorings += ["precision", "recall"]
 
             scores = cross_validate(
-                pipeline, X_train, self.le.transform(y_train), scoring=scorings, cv=5
+                pipeline, self.X_train, self.le.transform(self.y_train), scoring=scorings, cv=5
             )
 
             logger.info("Cross Validation scores:")
@@ -392,27 +397,31 @@ class Model:
                     f"{scoring.capitalize()}: f{score.mean()} (+/- {score.std() * 2})"
                 )
 
-        logger.info(f"X_train: {X_train.shape}, y_train: {y_train.shape}")
+        logger.info(f"X_train: {self.X_train.shape}, y_train: {self.y_train.shape}")
 
         # Training on the resampled dataset if sampler is provided.
         if self.sampler is not None:
-            X_train, y_train = self.sampler.fit_resample(X_train, y_train)
+            self.X_train_before_sampler = self.X_train
+            self.Y_train_before_sampler = self.y_train
+            self.X_train, self.y_train = self.sampler.fit_resample(self.X_train, self.y_train)
+            logger.info(f"resampled X_train: {self.X_train.shape}, y_train: {self.y_train.shape}")
 
-            logger.info(f"resampled X_train: {X_train.shape}, y_train: {y_train.shape}")
+        logger.info(f"X_test: {self.X_test.shape}, y_test: {self.y_test.shape}")
 
-        logger.info(f"X_test: {X_test.shape}, y_test: {y_test.shape}")
-
-        self.clf.fit(X_train, self.le.transform(y_train))
+        self.clf.fit(self.X_train, self.le.transform(self.y_train))
 
         logger.info("Model trained")
+
+    def evaluate_training(self, importance_cutoff=0.15):
+        tracking_metrics = {}
 
         feature_names = self.get_human_readable_feature_names()
         if self.calculate_importance and len(feature_names):
             explainer = shap.TreeExplainer(self.clf)
-            shap_values = explainer.shap_values(X_train)
+            shap_values = explainer.shap_values(self.X_train)
 
             # In the binary case, sometimes shap returns a single shap values matrix.
-            if is_binary and not isinstance(shap_values, list):
+            if self.is_binary and not isinstance(shap_values, list):
                 shap_values = [-shap_values, shap_values]
                 summary_plot_value = shap_values[1]
                 summary_plot_type = "layered_violin"
@@ -422,7 +431,7 @@ class Model:
 
             shap.summary_plot(
                 summary_plot_value,
-                to_array(X_train),
+                to_array(self.X_train),
                 feature_names=feature_names,
                 class_names=self.class_names,
                 plot_type=summary_plot_type,
@@ -447,80 +456,80 @@ class Model:
             tracking_metrics["feature_report"] = feature_report
 
         logger.info("Training Set scores:")
-        y_pred = self.clf.predict(X_train)
+        y_pred = self.clf.predict(self.X_train)
         y_pred = self.le.inverse_transform(y_pred)
-        if not is_multilabel:
+        if not self.is_multilabel:
             print(
                 classification_report_imbalanced(
-                    y_train, y_pred, labels=self.class_names
+                    self.y_train, y_pred, labels=self.class_names
                 )
             )
 
         logger.info("Test Set scores:")
         # Evaluate results on the test set.
-        y_pred = self.clf.predict(X_test)
+        y_pred = self.clf.predict(self.X_test)
         y_pred = self.le.inverse_transform(y_pred)
 
-        if is_multilabel:
+        if self.is_multilabel:
             assert isinstance(
                 y_pred[0], np.ndarray
             ), "The predictions should be multilabel"
 
-        logger.info(f"No confidence threshold - {len(y_test)} classified")
-        if is_multilabel:
-            confusion_matrix = metrics.multilabel_confusion_matrix(y_test, y_pred)
+        logger.info(f"No confidence threshold - {len(self.y_test)} classified")
+        if self.is_multilabel:
+            confusion_matrix = metrics.multilabel_confusion_matrix(self.y_test, y_pred)
         else:
             confusion_matrix = metrics.confusion_matrix(
-                y_test, y_pred, labels=self.class_names
+                self.y_test, y_pred, labels=self.class_names
             )
 
             print(
                 classification_report_imbalanced(
-                    y_test, y_pred, labels=self.class_names
+                    self.y_test, y_pred, labels=self.class_names
                 )
             )
             report = classification_report_imbalanced_values(
-                y_test, y_pred, labels=self.class_names
+                self.y_test, y_pred, labels=self.class_names
             )
 
             tracking_metrics["report"] = report
 
         print_labeled_confusion_matrix(
-            confusion_matrix, self.class_names, is_multilabel=is_multilabel
+            confusion_matrix, self.class_names, is_multilabel=self.is_multilabel
         )
 
         tracking_metrics["confusion_matrix"] = confusion_matrix.tolist()
 
         confidence_thresholds = [0.6, 0.7, 0.8, 0.9]
 
-        if is_binary:
+        if self.is_binary:
             confidence_thresholds = [0.1, 0.2, 0.3, 0.4] + confidence_thresholds
 
         # Evaluate results on the test set for some confidence thresholds.
         for confidence_threshold in confidence_thresholds:
-            y_pred_probas = self.clf.predict_proba(X_test)
+            y_pred_probas = self.clf.predict_proba(self.X_test)
             confidence_class_names = self.class_names + ["__NOT_CLASSIFIED__"]
 
             y_pred_filter = []
             classified_indices = []
-            for i in range(0, len(y_test)):
-                if not is_binary:
+            for i in range(0, len(self.y_test)):
+                if not self.is_binary:
                     argmax = np.argmax(y_pred_probas[i])
                 else:
                     argmax = 1 if y_pred_probas[i][1] > confidence_threshold else 0
 
                 if y_pred_probas[i][argmax] < confidence_threshold:
-                    if not is_multilabel:
+                    if not self.is_multilabel:
                         y_pred_filter.append("__NOT_CLASSIFIED__")
                     continue
 
                 classified_indices.append(i)
-                if is_multilabel:
+                if self.is_multilabel:
                     y_pred_filter.append(y_pred[i])
                 else:
                     y_pred_filter.append(argmax)
 
-            if not is_multilabel:
+            if not self.is_multilabel:
                 y_pred_filter = np.array(y_pred_filter)
                 y_pred_filter[classified_indices] = self.le.inverse_transform(
                     np.array(y_pred_filter[classified_indices], dtype=int)
@@ -531,29 +540,30 @@ class Model:
             logger.info(
                 f"\nConfidence threshold > {confidence_threshold} - {classified_num} classified"
             )
-            if is_multilabel:
+            if self.is_multilabel:
                 confusion_matrix = metrics.multilabel_confusion_matrix(
-                    y_test[classified_indices], np.asarray(y_pred_filter)
+                    self.y_test[classified_indices], np.asarray(y_pred_filter)
                 )
             else:
                 confusion_matrix = metrics.confusion_matrix(
-                    y_test.astype(str),
+                    self.y_test.astype(str),
                     y_pred_filter.astype(str),
                     labels=confidence_class_names,
                 )
                 print(
                     classification_report_imbalanced(
-                        y_test.astype(str),
+                        self.y_test.astype(str),
                         y_pred_filter.astype(str),
                         labels=confidence_class_names,
                     )
                 )
             print_labeled_confusion_matrix(
-                confusion_matrix, confidence_class_names, is_multilabel=is_multilabel
+                confusion_matrix, confidence_class_names, is_multilabel=self.is_multilabel
             )
 
         self.evaluation()
-
+        """         
+        RJR - this should be on a separate training step
         if self.entire_dataset_training:
             logger.info("Retraining on the entire dataset...")
 
@@ -566,16 +576,17 @@ class Model:
             logger.info(f"X_train: {X_train.shape}, y_train: {y_train.shape}")
 
             self.clf.fit(X_train, self.le.transform(y_train))
-
-        with open(self.__class__.__name__.lower(), "wb") as f:
-            pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
+        """
+#          Not supported now because we have been subclassed my MLFlow
+#        with open(self.__class__.__name__.lower(), "wb") as f:
+#            pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
 
         if self.store_dataset:
             with open(f"{self.__class__.__name__.lower()}_data_X", "wb") as f:
-                pickle.dump(X, f, protocol=pickle.HIGHEST_PROTOCOL)
+                pickle.dump(self.X, f, protocol=pickle.HIGHEST_PROTOCOL)
 
             with open(f"{self.__class__.__name__.lower()}_data_y", "wb") as f:
-                pickle.dump(y, f, protocol=pickle.HIGHEST_PROTOCOL)
+                pickle.dump(self.y, f, protocol=pickle.HIGHEST_PROTOCOL)
 
         return tracking_metrics
 

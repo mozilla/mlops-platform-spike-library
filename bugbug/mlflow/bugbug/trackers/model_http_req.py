@@ -11,6 +11,11 @@ url = "http://127.0.0.1:5000/invocations"
 #print(response.text)
 
 """
+ Serve model with:
+ mlflow models serve -m gs://oneclick-mlflow-store-f8bf20e5c6/2/99e12088cfe84d48961a9b597e1070f7/artifacts/spambug_full_model
+"""
+
+"""
 Request for the spam model
 """
 
@@ -21,6 +26,7 @@ for bug in example_bugs:
 prediction_input = [json.dumps(e) for e in example_bugs[:3]]
 response = requests.post(url, json={"inputs": prediction_input})
 print(response.text)
+
 """
 results -- looks like not spam!
 {"predictions": {"probs": [[0.9995030164718628, 0.0004970002337358892], [0.9981616139411926, 0.001838397467508912], [0.9976068735122681, 0.002393108094111085]], "indexes": [0, 0, 0], "suggestions": [0, 0, 0]}}

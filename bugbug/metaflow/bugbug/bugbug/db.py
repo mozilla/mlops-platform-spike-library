@@ -81,9 +81,8 @@ def download_support_file(path, file_name, extract=True):
         )
         return False
 
-
 # Download and extract databases.
-def download(path, support_files_too=False, extract=True):
+def download(path, support_files_too=False, extract=True, artifact_manager=None):
     # If a DB with the current schema is not available yet, we can't download.
     if is_different_schema(path):
         return False
