@@ -1,4 +1,3 @@
-import PIL
 import requests
 from metaflow import FlowSpec, step, kubernetes, card, current
 from metaflow.plugins.cards.card_modules.components import Markdown, Image
