@@ -6,6 +6,7 @@ import json
 import os
 import sys
 from logging import INFO, basicConfig, getLogger
+from zenml import pipeline, step, types
 
 from bugbug import db
 from bugbug.models import MODELS, get_model_class
@@ -18,37 +19,45 @@ logger = getLogger(__name__)
 
 
 class Trainer(object):
-    def go(self, args):
+    def __init__(self, args):
+        self.args = args
+        self.model_name = None
+        self.model_obj = None
+        self._get_model_object()
+
+    def download_datasets(self):
         # Download datasets that were built by bugbug_data.
         os.makedirs("data", exist_ok=True)
 
-        if args.classifier != "default":
-            assert (
-                args.model in MODELS_WITH_TYPE
-            ), f"{args.classifier} is not a valid classifier type for {args.model}"
-
-            model_name = f"{args.model}_{args.classifier}"
-        else:
-            model_name = args.model
-
-        model_class = get_model_class(model_name)
-        parameter_names = set(inspect.signature(model_class.__init__).parameters)
-        parameters = {
-            key: value for key, value in vars(args).items() if key in parameter_names
-        }
-        model_obj = model_class(**parameters)
-
-        if args.download_db:
-            for required_db in model_obj.training_dbs:
+        if self.args.download_db:
+            for required_db in self.model_obj.training_dbs:
                 assert db.download(required_db)
 
-            if args.download_eval:
-                model_obj.download_eval_dbs()
+            if self.args.download_eval:
+                self.model_obj.download_eval_dbs()
         else:
             logger.info("Skipping download of the databases")
 
-        logger.info("Training *%s* model", model_name)
-        metrics = model_obj.train(limit=args.limit)
+    def _get_model_object(self):
+        if self.args.classifier != "default":
+            assert (
+                self.args.model in MODELS_WITH_TYPE
+            ), f"{self.args.classifier} is not a valid classifier type for {self.args.model}"
+
+            self.model_name = f"{self.args.model}_{self.args.classifier}"
+        else:
+            self.model_name = self.args.model
+
+        model_class = get_model_class(self.model_name)
+        parameter_names = set(inspect.signature(model_class.__init__).parameters)
+        parameters = {
+            key: value for key, value in vars(self.args).items() if key in parameter_names
+        }
+        self.model_obj = model_class(**parameters)
+
+    def go(self):
+        logger.info("Training *%s* model", self.model_name)
+        metrics = self.model_obj.train(limit=self.args.limit)
 
         # Save the metrics as a file that can be uploaded as an artifact.
         metric_file_path = "metrics.json"
@@ -57,17 +66,19 @@ class Trainer(object):
 
         logger.info("Training done")
 
-        model_file_name = f"{model_name}model"
+        model_file_name = f"{self.model_name}model"
         assert os.path.exists(model_file_name)
         zstd_compress(model_file_name)
 
         logger.info("Model compressed")
 
-        if model_obj.store_dataset:
+        if self.model_obj.store_dataset:
             assert os.path.exists(f"{model_file_name}_data_X")
             zstd_compress(f"{model_file_name}_data_X")
             assert os.path.exists(f"{model_file_name}_data_y")
             zstd_compress(f"{model_file_name}_data_y")
+
+        return json.dumps(metrics, cls=CustomJsonEncoder)
 
 
 def parse_args(args):
@@ -149,13 +160,29 @@ def parse_args(args):
 
     return main_parser.parse_args(args)
 
-
-def main():
+@step(enable_cache=False)
+def get_trainer() -> Trainer:
+    logger.info("Step: get_trainer")
     args = parse_args(sys.argv[1:])
+    trainer = Trainer(args)
+    return trainer
 
-    retriever = Trainer()
-    retriever.go(args)
+@step(enable_cache=False)
+def download_datasets(trainer: Trainer) -> Trainer:
+    logger.info("Step: download_datasets")
+    trainer.download_datasets()
+    return trainer
 
+@step(enable_cache=False)
+def train(trainer: Trainer) -> types.HTMLString:
+    logger.info("Step: train")
+    return types.HTMLString(trainer.go())
+
+@pipeline
+def main():
+    trainer = get_trainer()
+    trainer = download_datasets(trainer)
+    metrics = train(trainer)
 
 if __name__ == "__main__":
     main()
