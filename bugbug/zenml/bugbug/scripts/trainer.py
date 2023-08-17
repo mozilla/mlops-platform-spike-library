@@ -6,7 +6,7 @@ import json
 import os
 import sys
 from logging import INFO, basicConfig, getLogger
-from zenml import pipeline, step
+from zenml import pipeline, step, types
 
 from bugbug import db
 from bugbug.models import MODELS, get_model_class
@@ -77,6 +77,8 @@ class Trainer(object):
             zstd_compress(f"{model_file_name}_data_X")
             assert os.path.exists(f"{model_file_name}_data_y")
             zstd_compress(f"{model_file_name}_data_y")
+
+        return json.dumps(metrics, cls=CustomJsonEncoder)
 
 
 def parse_args(args):
@@ -162,25 +164,25 @@ def parse_args(args):
 def get_trainer() -> Trainer:
     logger.info("Step: get_trainer")
     args = parse_args(sys.argv[1:])
-    retriever = Trainer(args)
-    return retriever
+    trainer = Trainer(args)
+    return trainer
 
 @step(enable_cache=False)
-def download_datasets(retriever: Trainer) -> Trainer:
+def download_datasets(trainer: Trainer) -> Trainer:
     logger.info("Step: download_datasets")
-    retriever.download_datasets()
-    return retriever
+    trainer.download_datasets()
+    return trainer
 
 @step(enable_cache=False)
-def train(retriever: Trainer):
+def train(trainer: Trainer) -> types.HTMLString:
     logger.info("Step: train")
-    retriever.go()
+    return types.HTMLString(trainer.go())
 
 @pipeline
 def main():
-    retriever = get_trainer()
-    retriever = download_datasets(retriever)
-    train(retriever)
+    trainer = get_trainer()
+    trainer = download_datasets(trainer)
+    metrics = train(trainer)
 
 if __name__ == "__main__":
     main()
