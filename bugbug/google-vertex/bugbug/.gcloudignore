@@ -1,0 +1,4 @@
+data/
+*.zst
+spambugmodel
+__pycache__

@@ -99,3 +99,8 @@ cache/
 data/
 http_service/
 .taskcluster.yml
+
+data/
+*.zst
+spambugmodel
+__pycache__

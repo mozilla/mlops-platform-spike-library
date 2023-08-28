@@ -1,2 +1,10 @@
 # mlops-platform-spike-library
-A collection of experimental integrations for mozilla ML projects.
+Testbed for VertexAI solutions for bugbug.
+
+## Testing
+From the `bugbug` directory (a virtual environment is recommended!):
+
+```shell
+pip3 install -r requirements.txt
+python -m scripts.trainer spambug
+```

@@ -5,6 +5,7 @@ import inspect
 import json
 import os
 import sys
+import subprocess
 from logging import INFO, basicConfig, getLogger
 
 from bugbug import db
@@ -62,6 +63,17 @@ class Trainer(object):
         zstd_compress(model_file_name)
 
         logger.info("Model compressed")
+
+        # Store artifacts
+        BUCKET_URI = f"gs://dex-vertexai-bugbug-moz-fx-dev-ctroy-ml-ops-spikes-unique"
+        subprocess.Popen([
+            "gsutil",
+            "cp",
+            f"{model_file_name}",
+            f"{BUCKET_URI}/bugbug-run/"
+        ]).wait()
+
+        logger.info("Model uploaded")
 
         if model_obj.store_dataset:
             assert os.path.exists(f"{model_file_name}_data_X")
