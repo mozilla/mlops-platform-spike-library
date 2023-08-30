@@ -56,8 +56,8 @@ class SpamBugModel:
 @serve.deployment()
 @serve.ingress(app)
 class MainDeployment:
-    def __init__(self, some_heavy_model):
-        self._some_heavy_model = some_heavy_model
+    def __init__(self, model):
+        self.spambug_model = model
 
     @app.get("/")
     async def docs_redirect(self):
@@ -71,7 +71,7 @@ class MainDeployment:
         self,
         swarm: SwarmOfBugs,
     ) -> InferenceResponse:
-        ref = await self._some_heavy_model.remote(swarm)
+        ref = await self.spambug_model.remote(swarm)
         result: InferenceResponse = await ref
         return result
 
