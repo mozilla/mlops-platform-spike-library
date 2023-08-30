@@ -26,6 +26,7 @@ You see your console output display the text: "Deployed Serve app successfully."
 }
 ```
 or you can get your own bug IDs [right from bugzilla](https://bugzilla.mozilla.org/buglist.cgi?product=Firefox&component=about%3Alogins&resolution=---).
+
 5. Click the 'Execute' button.
 
 **You should be able to scroll down and see a successful response like:**
