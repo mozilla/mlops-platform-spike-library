@@ -6,7 +6,6 @@ import pickle
 import sys
 
 sys.path.append('/Users/chelseatroy/mozilla/mlops-platform-spike-library/bugbug/weights-and-biases/bugbug')
-import bugbug
 from bugbug import bugzilla
 
 import os
