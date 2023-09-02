@@ -1,0 +1,174 @@
+wandb_version: 1
+
+predictor:
+  desc: null
+  value: cpu_predictor
+_wandb:
+  desc: null
+  value:
+    python_version: 3.10.8
+    cli_version: 0.15.8
+    framework: xgboost
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    start_time: 1691159652.555172
+    t:
+      1:
+      - 5
+      - 6
+      - 53
+      - 55
+      - 105
+      2:
+      - 5
+      - 6
+      - 53
+      - 55
+      - 105
+      3:
+      - 16
+      - 23
+      - 31
+      4: 3.10.8
+      5: 0.15.8
+      8:
+      - 5
+    visualize:
+      Feature Importance:
+        panel_type: Vega2
+        panel_config:
+          panelDefId: wandb/bar/v0
+          fieldSettings:
+            label: Feature
+            value: Importance
+          stringSettings:
+            title: Feature Importance
+          transform:
+            name: tableWithLeafColNames
+          userQuery:
+            queryFields:
+            - name: runSets
+              args:
+              - name: runSets
+                value: ${runSets}
+              fields:
+              - name: id
+                fields: []
+              - name: name
+                fields: []
+              - name: _defaultColorIndex
+                fields: []
+              - name: summaryTable
+                args:
+                - name: tableKey
+                  value: Feature Importance_table
+                fields: []
+learner:
+  desc: null
+  value:
+    generic_param:
+      fail_on_invalid_gpu_id: '0'
+      gpu_id: '-1'
+      n_jobs: '8'
+      nthread: '8'
+      random_state: '0'
+      seed: '0'
+      seed_per_iteration: '0'
+      validate_parameters: '1'
+    gradient_booster:
+      gbtree_model_param:
+        num_parallel_tree: '1'
+        num_trees: '0'
+        size_leaf_vector: '0'
+      gbtree_train_param:
+        predictor: cpu_predictor
+        process_type: default
+        tree_method: auto
+        updater: grow_colmaker,prune
+        updater_seq: grow_colmaker,prune
+      name: gbtree
+      specified_updater: false
+      updater:
+        grow_colmaker:
+          colmaker_train_param:
+            default_direction: learn
+            opt_dense_col: '1'
+          train_param:
+            alpha: '0'
+            cache_opt: '1'
+            colsample_bylevel: '1'
+            colsample_bynode: '1'
+            colsample_bytree: '1'
+            eta: '0.300000012'
+            gamma: '0'
+            grow_policy: depthwise
+            interaction_constraints: ''
+            lambda: '1'
+            learning_rate: '0.300000012'
+            max_bin: '256'
+            max_cat_threshold: '64'
+            max_cat_to_onehot: '4'
+            max_delta_step: '0'
+            max_depth: '6'
+            max_leaves: '0'
+            min_child_weight: '1'
+            min_split_loss: '0'
+            monotone_constraints: ()
+            refresh_leaf: '1'
+            reg_alpha: '0'
+            reg_lambda: '1'
+            sampling_method: uniform
+            sketch_ratio: '2'
+            sparse_threshold: '0.20000000000000001'
+            subsample: '1'
+        prune:
+          train_param:
+            alpha: '0'
+            cache_opt: '1'
+            colsample_bylevel: '1'
+            colsample_bynode: '1'
+            colsample_bytree: '1'
+            eta: '0.300000012'
+            gamma: '0'
+            grow_policy: depthwise
+            interaction_constraints: ''
+            lambda: '1'
+            learning_rate: '0.300000012'
+            max_bin: '256'
+            max_cat_threshold: '64'
+            max_cat_to_onehot: '4'
+            max_delta_step: '0'
+            max_depth: '6'
+            max_leaves: '0'
+            min_child_weight: '1'
+            min_split_loss: '0'
+            monotone_constraints: ()
+            refresh_leaf: '1'
+            reg_alpha: '0'
+            reg_lambda: '1'
+            sampling_method: uniform
+            sketch_ratio: '2'
+            sparse_threshold: '0.20000000000000001'
+            subsample: '1'
+    learner_model_param:
+      base_score: 5E-1
+      boost_from_average: '1'
+      num_class: '0'
+      num_feature: '26467'
+      num_target: '1'
+    learner_train_param:
+      booster: gbtree
+      disable_default_eval_metric: '0'
+      dsplit: auto
+      objective: binary:logistic
+    metrics: []
+    objective:
+      name: binary:logistic
+      reg_loss_param:
+        scale_pos_weight: '1'
+version:
+  desc: null
+  value:
+  - 1
+  - 7
+  - 6

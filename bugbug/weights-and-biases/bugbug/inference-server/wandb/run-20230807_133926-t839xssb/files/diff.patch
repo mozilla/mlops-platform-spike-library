@@ -1,0 +1,57 @@
+diff --git a/bugbug/weights-and-biases/bugbug/bugbug/model.py b/bugbug/weights-and-biases/bugbug/bugbug/model.py
+index d92f88d..e8ce99a 100644
+--- a/bugbug/weights-and-biases/bugbug/bugbug/model.py
++++ b/bugbug/weights-and-biases/bugbug/bugbug/model.py
+@@ -451,7 +451,11 @@ class Model:
+         logger.info("Model trained")
+ 
+         feature_names = self.get_human_readable_feature_names()
++        print("CARCURATE")
++        print(self.calculate_importance)
++        print(len(feature_names))
+         if self.calculate_importance and len(feature_names):
++            print("IMPORTANCE CODE RUNNING")
+             explainer = shap.TreeExplainer(self.clf)
+             shap_values = explainer.shap_values(X_train)
+ 
+@@ -481,6 +485,18 @@ class Model:
+                 importance_cutoff, shap_values
+             )
+ 
++            artifact = wandb.Artifact(name="feature_importance_plot", type="image")
++            artifact.add_file("feature_importance.png")
++            run.log_artifact(artifact)
++
++            with wandb.init(project="feature-importance-plot") as run:
++                fields = {"rank order": "rank_order", "feature name": "feature_name",
++                          "feature importance": "feature_importance"}
++                my_custom_chart = wandb.plot_table(vega_spec_name="ctroy/mlops-mozilla/feature_importance",
++                                                   data_table=wandb.Table(dataframe=important_features),
++                                                   fields=fields)
++                wandb.log({"feature-importance-plot": my_custom_chart})
++
+             self.print_feature_importances(important_features)
+ 
+             # Save the important features in the metric report too
+diff --git a/bugbug/weights-and-biases/bugbug/scripts/trainer.py b/bugbug/weights-and-biases/bugbug/scripts/trainer.py
+index 869c1dc..7999084 100644
+--- a/bugbug/weights-and-biases/bugbug/scripts/trainer.py
++++ b/bugbug/weights-and-biases/bugbug/scripts/trainer.py
+@@ -73,7 +73,7 @@ class Trainer(object):
+         logger.info("Model compressed")
+ 
+         artifact = wandb.Artifact(name="model_file", type="data")
+-        artifact.add_file(f"{model_name}model")
++        artifact.add_file(model_file_name)
+         wandb_run.log_artifact(artifact)
+ 
+         if model_obj.store_dataset:
+diff --git a/bugbug/weights-and-biases/bugbug/wandb/latest-run b/bugbug/weights-and-biases/bugbug/wandb/latest-run
+index bb9b744..0f85009 120000
+--- a/bugbug/weights-and-biases/bugbug/wandb/latest-run
++++ b/bugbug/weights-and-biases/bugbug/wandb/latest-run
+@@ -1 +1 @@
+-run-20230804_143820-z5kk0r2n
+\ No newline at end of file
++run-20230807_133358-kxt50oa5
+\ No newline at end of file

@@ -1,0 +1,28 @@
+diff --git a/bugbug/weights-and-biases/bugbug/bugbug/model.py b/bugbug/weights-and-biases/bugbug/bugbug/model.py
+index d92f88d..21f7f5f 100644
+--- a/bugbug/weights-and-biases/bugbug/bugbug/model.py
++++ b/bugbug/weights-and-biases/bugbug/bugbug/model.py
+@@ -481,6 +481,14 @@ class Model:
+                 importance_cutoff, shap_values
+             )
+ 
++            with wandb.init(project="feature-importance-plot") as run:
++                fields = {"rank order": "rank_order", "feature name": "feature_name",
++                          "feature importance": "feature_importance"}
++                my_custom_chart = wandb.plot_table(vega_spec_name="ctroy/mlops-mozilla/feature_importance",
++                                                   data_table=wandb.Table(dataframe=important_features),
++                                                   fields=fields)
++                wandb.log({"feature-importance-plot": my_custom_chart})
++
+             self.print_feature_importances(important_features)
+ 
+             # Save the important features in the metric report too
+diff --git a/bugbug/weights-and-biases/bugbug/wandb/latest-run b/bugbug/weights-and-biases/bugbug/wandb/latest-run
+index bb9b744..34a916f 120000
+--- a/bugbug/weights-and-biases/bugbug/wandb/latest-run
++++ b/bugbug/weights-and-biases/bugbug/wandb/latest-run
+@@ -1 +1 @@
+-run-20230804_143820-z5kk0r2n
+\ No newline at end of file
++run-20230804_155319-9u6ht066
+\ No newline at end of file

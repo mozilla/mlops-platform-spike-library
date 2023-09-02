@@ -1,0 +1,57 @@
+{
+    "os": "macOS-10.16-x86_64-i386-64bit",
+    "python": "3.10.8",
+    "heartbeatAt": "2023-08-30T17:10:35.034640",
+    "startedAt": "2023-08-30T17:10:34.507940",
+    "docker": null,
+    "cuda": null,
+    "args": [
+        "--node-ip-address=127.0.0.1",
+        "--node-manager-port=56197",
+        "--object-store-name=/tmp/ray/session_2023-08-30_12-10-24_003569_22814/sockets/plasma_store",
+        "--raylet-name=/tmp/ray/session_2023-08-30_12-10-24_003569_22814/sockets/raylet",
+        "--redis-address=None",
+        "--temp-dir=/tmp/ray",
+        "--metrics-agent-port=64353",
+        "--logging-rotate-bytes=536870912",
+        "--logging-rotate-backup-count=5",
+        "--gcs-address=127.0.0.1:63045",
+        "--session-name=session_2023-08-30_12-10-24_003569_22814",
+        "--temp-dir=/tmp/ray",
+        "--webui=127.0.0.1:8265",
+        "--startup-token=18",
+        "--worker-launch-time-ms=1693415430827"
+    ],
+    "state": "running",
+    "program": "/Users/chelseatroy/.local/share/virtualenvs/inference-server-haSMdSLJ/lib/python3.10/site-packages/ray/_private/workers/default_worker.py",
+    "git": {
+        "remote": null,
+        "commit": null
+    },
+    "email": "chelsea.dommert@gmail.com",
+    "root": "/Users/chelseatroy/mozilla/mlops-platform-spike-library/bugbug/weights-and-biases/bugbug/inference-server",
+    "host": "chelseatroy-cqmd6r",
+    "username": "chelseatroy",
+    "executable": "/Users/chelseatroy/.local/share/virtualenvs/inference-server-haSMdSLJ/bin/python",
+    "cpu_count": 8,
+    "cpu_count_logical": 16,
+    "cpu_freq": {
+        "current": 2400,
+        "min": 2400,
+        "max": 2400
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2400,
+            "min": 2400,
+            "max": 2400
+        }
+    ],
+    "disk": {
+        "total": 465.62699127197266,
+        "used": 11.156768798828125
+    },
+    "memory": {
+        "total": 64.0
+    }
+}

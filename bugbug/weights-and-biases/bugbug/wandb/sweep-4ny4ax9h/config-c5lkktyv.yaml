@@ -1,0 +1,174 @@
+wandb_version: 1
+
+learner.generic_param.fail_on_invalid_gpu_id:
+  value: '0'
+learner.generic_param.gpu_id:
+  value: '-1'
+learner.generic_param.n_jobs:
+  value: '8'
+learner.generic_param.nthread:
+  value: '8'
+learner.generic_param.random_state:
+  value: '0'
+learner.generic_param.seed:
+  value: '0'
+learner.generic_param.seed_per_iteration:
+  value: '0'
+learner.generic_param.validate_parameters:
+  value: '1'
+learner.gradient_booster.gbtree_model_param.num_parallel_tree:
+  value: '1'
+learner.gradient_booster.gbtree_model_param.num_trees:
+  value: '0'
+learner.gradient_booster.gbtree_model_param.size_leaf_vector:
+  value: '0'
+learner.gradient_booster.gbtree_train_param.predictor:
+  value: cpu_predictor
+learner.gradient_booster.gbtree_train_param.process_type:
+  value: default
+learner.gradient_booster.gbtree_train_param.tree_method:
+  value: auto
+learner.gradient_booster.gbtree_train_param.updater:
+  value: grow_colmaker
+learner.gradient_booster.gbtree_train_param.updater_seq:
+  value: prune
+learner.gradient_booster.name:
+  value: gbtree
+learner.gradient_booster.specified_updater:
+  value: 'false'
+learner.gradient_booster.updater.grow_colmaker.colmaker_train_param.default_direction:
+  value: learn
+learner.gradient_booster.updater.grow_colmaker.colmaker_train_param.opt_dense_col:
+  value: '1'
+learner.gradient_booster.updater.grow_colmaker.train_param.alpha:
+  value: '0'
+learner.gradient_booster.updater.grow_colmaker.train_param.cache_opt:
+  value: '1'
+learner.gradient_booster.updater.grow_colmaker.train_param.colsample_bylevel:
+  value: '1'
+learner.gradient_booster.updater.grow_colmaker.train_param.colsample_bynode:
+  value: '1'
+learner.gradient_booster.updater.grow_colmaker.train_param.colsample_bytree:
+  value: '1'
+learner.gradient_booster.updater.grow_colmaker.train_param.eta:
+  value: '0.300000012'
+learner.gradient_booster.updater.grow_colmaker.train_param.gamma:
+  value: '0'
+learner.gradient_booster.updater.grow_colmaker.train_param.grow_policy:
+  value: depthwise
+learner.gradient_booster.updater.grow_colmaker.train_param.interaction_constraints:
+  value: ''
+learner.gradient_booster.updater.grow_colmaker.train_param.lambda:
+  value: '1'
+learner.gradient_booster.updater.grow_colmaker.train_param.learning_rate:
+  value: '0.300000012'
+learner.gradient_booster.updater.grow_colmaker.train_param.max_bin:
+  value: '256'
+learner.gradient_booster.updater.grow_colmaker.train_param.max_cat_threshold:
+  value: '64'
+learner.gradient_booster.updater.grow_colmaker.train_param.max_cat_to_onehot:
+  value: '4'
+learner.gradient_booster.updater.grow_colmaker.train_param.max_delta_step:
+  value: '0'
+learner.gradient_booster.updater.grow_colmaker.train_param.max_depth:
+  value: '6'
+learner.gradient_booster.updater.grow_colmaker.train_param.max_leaves:
+  value: '0'
+learner.gradient_booster.updater.grow_colmaker.train_param.min_child_weight:
+  value: '1'
+learner.gradient_booster.updater.grow_colmaker.train_param.min_split_loss:
+  value: '0'
+learner.gradient_booster.updater.grow_colmaker.train_param.monotone_constraints:
+  value: ()
+learner.gradient_booster.updater.grow_colmaker.train_param.refresh_leaf:
+  value: '1'
+learner.gradient_booster.updater.grow_colmaker.train_param.reg_alpha:
+  value: '0'
+learner.gradient_booster.updater.grow_colmaker.train_param.reg_lambda:
+  value: '1'
+learner.gradient_booster.updater.grow_colmaker.train_param.sampling_method:
+  value: uniform
+learner.gradient_booster.updater.grow_colmaker.train_param.sketch_ratio:
+  value: '2'
+learner.gradient_booster.updater.grow_colmaker.train_param.sparse_threshold:
+  value: '0.20000000000000001'
+learner.gradient_booster.updater.grow_colmaker.train_param.subsample:
+  value: '1'
+learner.gradient_booster.updater.prune.train_param.alpha:
+  value: '0'
+learner.gradient_booster.updater.prune.train_param.cache_opt:
+  value: '1'
+learner.gradient_booster.updater.prune.train_param.colsample_bylevel:
+  value: '1'
+learner.gradient_booster.updater.prune.train_param.colsample_bynode:
+  value: '1'
+learner.gradient_booster.updater.prune.train_param.colsample_bytree:
+  value: '1'
+learner.gradient_booster.updater.prune.train_param.eta:
+  value: '0.300000012'
+learner.gradient_booster.updater.prune.train_param.gamma:
+  value: '0'
+learner.gradient_booster.updater.prune.train_param.grow_policy:
+  value: depthwise
+learner.gradient_booster.updater.prune.train_param.interaction_constraints:
+  value: ''
+learner.gradient_booster.updater.prune.train_param.lambda:
+  value: '1'
+learner.gradient_booster.updater.prune.train_param.learning_rate:
+  value: '0.300000012'
+learner.gradient_booster.updater.prune.train_param.max_bin:
+  value: '256'
+learner.gradient_booster.updater.prune.train_param.max_cat_threshold:
+  value: '64'
+learner.gradient_booster.updater.prune.train_param.max_cat_to_onehot:
+  value: '4'
+learner.gradient_booster.updater.prune.train_param.max_delta_step:
+  value: '0'
+learner.gradient_booster.updater.prune.train_param.max_depth:
+  value: '6'
+learner.gradient_booster.updater.prune.train_param.max_leaves:
+  value: '0'
+learner.gradient_booster.updater.prune.train_param.min_child_weight:
+  value: '1'
+learner.gradient_booster.updater.prune.train_param.min_split_loss:
+  value: '0'
+learner.gradient_booster.updater.prune.train_param.monotone_constraints:
+  value: ()
+learner.gradient_booster.updater.prune.train_param.refresh_leaf:
+  value: '1'
+learner.gradient_booster.updater.prune.train_param.reg_alpha:
+  value: '0'
+learner.gradient_booster.updater.prune.train_param.reg_lambda:
+  value: '1'
+learner.gradient_booster.updater.prune.train_param.sampling_method:
+  value: uniform
+learner.gradient_booster.updater.prune.train_param.sketch_ratio:
+  value: '2'
+learner.gradient_booster.updater.prune.train_param.sparse_threshold:
+  value: '0.20000000000000001'
+learner.gradient_booster.updater.prune.train_param.subsample:
+  value: '1'
+learner.learner_model_param.base_score:
+  value: 5E-1
+learner.learner_model_param.boost_from_average:
+  value: '1'
+learner.learner_model_param.num_class:
+  value: '0'
+learner.learner_model_param.num_feature:
+  value: '26467'
+learner.learner_model_param.num_target:
+  value: '1'
+learner.learner_train_param.booster:
+  value: gbtree
+learner.learner_train_param.disable_default_eval_metric:
+  value: '0'
+learner.learner_train_param.dsplit:
+  value: auto
+learner.learner_train_param.objective:
+  value: binary:logistic
+learner.objective.name:
+  value: binary:logistic
+learner.objective.reg_loss_param.scale_pos_weight:
+  value: '1'
+predictor:
+  value: cpu_predictor

@@ -1,0 +1,43 @@
+{
+    "os": "macOS-10.16-x86_64-i386-64bit",
+    "python": "3.10.8",
+    "heartbeatAt": "2023-08-09T15:24:28.692943",
+    "startedAt": "2023-08-09T15:24:28.260025",
+    "docker": null,
+    "cuda": null,
+    "args": [
+        "spambug"
+    ],
+    "state": "running",
+    "program": "-m scripts.trainer",
+    "git": {
+        "remote": null,
+        "commit": null
+    },
+    "email": "chelsea.dommert@gmail.com",
+    "root": "/Users/chelseatroy/mozilla/mlops-platform-spike-library/bugbug/weights-and-biases/bugbug",
+    "host": "chelseatroy-cqmd6r",
+    "username": "chelseatroy",
+    "executable": "/Users/chelseatroy/miniconda3/bin/python",
+    "cpu_count": 8,
+    "cpu_count_logical": 16,
+    "cpu_freq": {
+        "current": 2400,
+        "min": 2400,
+        "max": 2400
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2400,
+            "min": 2400,
+            "max": 2400
+        }
+    ],
+    "disk": {
+        "total": 465.62699127197266,
+        "used": 11.040821075439453
+    },
+    "memory": {
+        "total": 64.0
+    }
+}
