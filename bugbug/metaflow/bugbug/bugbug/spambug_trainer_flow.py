@@ -13,12 +13,14 @@ class SpamBugTrainerFlow(FlowSpec, SpamBugModel):
         SpamBugModel.__init__(self)  # This must go before the FlowSpec init due to a Metaflow quirk
         FlowSpec.__init__(self)
 
+    @kubernetes(image="us-central1-docker.pkg.dev/moz-fx-dev-ctroy-ml-ops-spikes/bugbug-training-runs-mlflow/metaflow_base:latest", cpu=16)
     @step
     def start(self):
         self.setup()  # Rjr this is needed because there are pickle serialization issues with
         # objects that are set in the init function. May be metaflow related
         self.next(self.flow_collect_training_data)
 
+    @kubernetes(image="us-central1-docker.pkg.dev/moz-fx-dev-ctroy-ml-ops-spikes/bugbug-training-runs-mlflow/metaflow_base:latest", cpu=16)
     @step
     def flow_collect_training_data(self):
         # TODO -- I assume we will be able to query the version ID of the latest bugubug data
@@ -34,6 +36,7 @@ class SpamBugTrainerFlow(FlowSpec, SpamBugModel):
         self.setup_data_and_splits()
         self.next(self.flow_train)
 
+    @kubernetes(image="us-central1-docker.pkg.dev/moz-fx-dev-ctroy-ml-ops-spikes/bugbug-training-runs-mlflow/metaflow_base:latest", cpu=16)
     @step
     def flow_train(self):
         """
@@ -42,6 +45,7 @@ class SpamBugTrainerFlow(FlowSpec, SpamBugModel):
         self.train()
         self.next(self.flow_validate_model)
 
+    @kubernetes(image="us-central1-docker.pkg.dev/moz-fx-dev-ctroy-ml-ops-spikes/bugbug-training-runs-mlflow/metaflow_base:latest", cpu=16)
     @card
     @step
     def flow_validate_model(self):
@@ -74,6 +78,7 @@ class SpamBugTrainerFlow(FlowSpec, SpamBugModel):
         )
         self.next(self.end)
 
+    @kubernetes(image="us-central1-docker.pkg.dev/moz-fx-dev-ctroy-ml-ops-spikes/bugbug-training-runs-mlflow/metaflow_base:latest", cpu=16)
     @step
     def end(self):
         """
