@@ -13,6 +13,7 @@ class SpamBugTrainerFlow(FlowSpec, SpamBugModel):
         SpamBugModel.__init__(self)  # This must go before the FlowSpec init due to a Metaflow quirk
         FlowSpec.__init__(self)
 
+    @kubernetes(image="us-central1-docker.pkg.dev/moz-fx-dev-ctroy-ml-ops-spikes/bugbug-training-runs-mlflow/metaflow_base:latest", cpu=16)
     @step
     def start(self):
         self.setup()  # Rjr this is needed because there are pickle serialization issues with
